@@ -312,7 +312,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
         <option value="">All Payments</option><option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="card">Card</option><option value="credit">Credit</option>
       </select>
     </div>
-    <table class="table"><thead><tr><th>Invoice</th><th>Time</th><th>Customer</th><th>Cashier</th><th>Items</th><th>Payment</th><th>Total</th><th>Status</th><th></th></tr></thead>
+    <table class="table"><thead><tr><th>#</th><th>Invoice</th><th>Time</th><th>Customer</th><th>Cashier</th><th>Items</th><th>Payment</th><th>Total</th><th>Status</th><th></th></tr></thead>
     <tbody id="sales-tbody"></tbody></table>
   </div>
 </div>
@@ -556,7 +556,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <div><div class="page-title">🚚 Suppliers</div><div class="page-subtitle">Vendor management</div></div>
     <div class="page-actions"><button class="btn btn-acc" onclick="openModal('add-supplier-modal')">+ Add Supplier</button></div>
   </div>
-  <div class="scroll"><table class="table"><thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Payment Terms</th><th></th></tr></thead>
+  <div class="scroll"><table class="table"><thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Deals In</th><th>Payment Terms</th><th></th></tr></thead>
   <tbody id="suppliers-tbody"></tbody></table></div>
 </div>
 
@@ -787,6 +787,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
           <select class="input" id="sup-terms"><option>Cash on delivery</option><option>Net 7</option><option>Net 14</option><option>Net 30</option><option>Prepaid</option></select>
         </div>
       </div>
+      <div class="form-row"><label class="form-label">Deals In</label><input class="input" id="sup-deals" placeholder="e.g. Phones, Laptops, Accessories"></div>
       <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveSupplier()">Save Supplier</button>
     </div>
   </div>
@@ -801,6 +802,8 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
         <div class="form-row" style="margin:0"><label class="form-label">Supplier *</label><select class="input" id="po-supplier"></select></div>
         <div class="form-row" style="margin:0"><label class="form-label">Destination Branch *</label><select class="input" id="po-branch"></select></div>
       </div>
+      <datalist id="po-prod-list"></datalist>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:6px">Pick an existing product by name/SKU, or type a new product name and fill in Category + Sell Price so new stock is properly categorized when received.</div>
       <div id="po-items-list" style="margin-bottom:10px"></div>
       <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:12px" onclick="addPOLine()">+ Add Item</button>
       <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:10px">
@@ -1459,14 +1462,15 @@ function renderSalesKPIs(sales) {
 
 function renderSalesTable(sales) {
   const tbody = document.getElementById('sales-tbody')
-  if (!sales.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t3)">No sales found</td></tr>`; return }
-  tbody.innerHTML = sales.map(s => {
+  if (!sales.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--t3)">No sales found</td></tr>`; return }
+  tbody.innerHTML = sales.map((s, idx) => {
     const payMethod = s.payments?.[0]?.method || '—'
     const custName = s.customers?.name || 'Walk-in'
     const cashier = s.users?.initials || '—'
     const items = s.sale_items?.length || 0
     const isVoid = s.status === 'voided'
     return `<tr style="cursor:pointer;${isVoid?'opacity:.5':''}">
+      <td style="color:var(--t3)">${idx+1}.</td>
       <td><span style="font-family:monospace;color:var(--acc);${isVoid?'text-decoration:line-through':''}">${esc(s.invoice_number)}</span></td>
       <td style="color:var(--t3)">${fmtTime(s.created_at)}</td>
       <td>${esc(custName)}</td>
@@ -2149,12 +2153,13 @@ async function loadSuppliers() {
   const poSup = document.getElementById('po-supplier')
   if (poSup) poSup.innerHTML = (data||[]).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')
   const tbody = document.getElementById('suppliers-tbody')
-  if (!data?.length) { tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3)">No suppliers yet</td></tr>`; return }
+  if (!data?.length) { tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--t3)">No suppliers yet</td></tr>`; return }
   tbody.innerHTML = data.map(s=>`<tr>
     <td style="font-weight:600">${esc(s.name)}</td>
     <td>${esc(s.contact_person||'—')}</td>
     <td>${esc(s.phone||'—')}</td>
     <td>${esc(s.email||'—')}</td>
+    <td>${esc(s.deals_in||'—')}</td>
     <td>${esc(s.payment_terms||'—')}</td>
     <td><button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px" onclick="editSupplier('${s.id}')">✏️ Edit</button></td>
   </tr>`).join('')
@@ -2169,6 +2174,7 @@ function editSupplier(id) {
   document.getElementById('sup-contact').value = s.contact_person||''
   document.getElementById('sup-phone').value = s.phone||''
   document.getElementById('sup-email').value = s.email||''
+  document.getElementById('sup-deals').value = s.deals_in||''
   document.getElementById('sup-terms').value = s.payment_terms||'Cash on delivery'
   openModal('add-supplier-modal')
 }
@@ -2176,7 +2182,7 @@ function editSupplier(id) {
 async function saveSupplier() {
   const name = document.getElementById('sup-name').value.trim()
   if (!name) { notify('Supplier name required','',false); return }
-  const payload = { name, contact_person: document.getElementById('sup-contact').value.trim()||null, phone: document.getElementById('sup-phone').value.trim()||null, email: document.getElementById('sup-email').value.trim()||null, payment_terms: document.getElementById('sup-terms').value }
+  const payload = { name, contact_person: document.getElementById('sup-contact').value.trim()||null, phone: document.getElementById('sup-phone').value.trim()||null, email: document.getElementById('sup-email').value.trim()||null, deals_in: document.getElementById('sup-deals').value.trim()||null, payment_terms: document.getElementById('sup-terms').value }
   const editId = document.getElementById('edit-supplier-id').value
   if (editId) await sb.from('suppliers').update(payload).eq('id', editId)
   else await sb.from('suppliers').insert(payload)
@@ -2212,19 +2218,56 @@ function addPOLine() {
 
 function renderPOLines() {
   const list = document.getElementById('po-items-list')
-  list.innerHTML = S.poLines.map((line, idx)=>`
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center">
-      <input class="input" style="height:32px" placeholder="Product name/SKU" value="${esc(line.name)}" oninput="updatePOLine(${idx},'name',this.value)" list="cat-list">
-      <input class="input" style="height:32px" type="number" placeholder="Qty" value="${line.qty}" oninput="updatePOLine(${idx},'qty',this.value)">
-      <input class="input" style="height:32px" type="number" placeholder="Cost" value="${line.cost||''}" oninput="updatePOLine(${idx},'cost',this.value)">
-      <button onclick="removePOLine(${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px">✕</button>
-    </div>`).join('')
+  const prodList = document.getElementById('po-prod-list')
+  if (prodList) prodList.innerHTML = (S.products||[]).map(p=>`<option value="${esc(p.name)}">`).join('')
+  list.innerHTML = S.poLines.map((line, idx)=>{
+    const matched = S.products.find(p=>p.name.toLowerCase()===(line.name||'').toLowerCase()||p.sku.toLowerCase()===(line.name||'').toLowerCase())
+    return `
+    <div style="border:1px solid var(--bd);border-radius:8px;padding:8px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;align-items:center">
+        <input class="input" style="height:32px" placeholder="Product name/SKU" value="${esc(line.name)}" oninput="updatePOLine(${idx},'name',this.value)" list="po-prod-list">
+        <input class="input" style="height:32px" type="number" placeholder="Qty" value="${line.qty}" oninput="updatePOLine(${idx},'qty',this.value)">
+        <input class="input" style="height:32px" type="number" placeholder="Cost" value="${line.cost||''}" oninput="updatePOLine(${idx},'cost',this.value)">
+        <button onclick="removePOLine(${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px">✕</button>
+      </div>
+      ${matched
+        ? `<div style="font-size:11px;color:var(--grn);margin-top:6px">✓ Matches existing product — ${esc(matched.category)}${matched.subcategory?' / '+esc(matched.subcategory):''}${matched.brand?' · '+esc(matched.brand):''}</div>`
+        : `<div style="font-size:11px;color:var(--yel,#d9a441);margin-top:6px">New product — fill in details so it's properly categorized on receipt:</div>
+           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:6px">
+             <input class="input" style="height:30px;font-size:12px" placeholder="Category *" value="${esc(line.category||'')}" oninput="updatePOLine(${idx},'category',this.value)" list="cat-list">
+             <input class="input" style="height:30px;font-size:12px" placeholder="Subcategory" value="${esc(line.subcategory||'')}" oninput="updatePOLine(${idx},'subcategory',this.value)" list="subcat-list">
+             <input class="input" style="height:30px;font-size:12px" placeholder="Brand" value="${esc(line.brand||'')}" oninput="updatePOLine(${idx},'brand',this.value)" list="brand-list">
+             <input class="input" style="height:30px;font-size:12px" type="number" placeholder="Sell price *" value="${line.sell_price||''}" oninput="updatePOLine(${idx},'sell_price',this.value)">
+           </div>`}
+    </div>`}).join('')
   const total = S.poLines.reduce((s,l)=>s+(parseFloat(l.cost)||0)*(parseInt(l.qty)||0),0)
   document.getElementById('po-total').textContent = `KSh ${fmt(total)}`
 }
 
 function updatePOLine(idx, field, val) { S.poLines[idx][field] = val; renderPOLines() }
 function removePOLine(idx) { S.poLines.splice(idx,1); renderPOLines() }
+
+// Find an existing product by exact name/SKU match, or create a new properly-categorized one
+async function findOrCreateProductForLine(line) {
+  const nameQ = (line.name||'').trim()
+  if (!nameQ) return null
+  let prod = S.products.find(p=>p.name.toLowerCase()===nameQ.toLowerCase()||p.sku.toLowerCase()===nameQ.toLowerCase())
+  if (prod) return prod
+  // No match — create a new product using the category details supplied at receiving time
+  const cat = (line.category||'').trim()
+  const subcat = (line.subcategory||'').trim()
+  const brand = (line.brand||'').trim()
+  const retail = parseFloat(line.sell_price)||0
+  if (!cat || !retail) return { _missing: true, name: nameQ }
+  const sku = ('PO-'+nameQ).toUpperCase().replace(/[^A-Z0-9]+/g,'-').slice(0,40)
+  const payload = { name:nameQ, sku, category:cat, subcategory:subcat||null, brand:brand||null, cost_price:parseFloat(line.cost)||0, retail_price:retail, reorder_point:5, warranty_months:0, has_imei:false, is_bundle:false, is_active:true }
+  sb.from('categories').upsert({ name:cat, subcategory:subcat||null }, { onConflict:'name,subcategory' }).then(()=>{})
+  const { data: newP, error } = await sb.from('products').insert(payload).select().single()
+  if (error || !newP) return null
+  await sb.from('inventory').insert(S.branches.map(b=>({ product_id:newP.id, branch_id:b.id, qty:0 })))
+  S.products.push(newP)
+  return newP
+}
 
 async function savePO() {
   const suppId = document.getElementById('po-supplier').value
@@ -2234,10 +2277,16 @@ async function savePO() {
   const { data: poNum } = await sb.rpc('next_po_number')
   const { data: po } = await sb.from('purchases').insert({ po_number:poNum, supplier_id:suppId, branch_id:branchId, total_amount:total, status:'ordered', ordered_by:S.user.id, notes:document.getElementById('po-notes').value }).select().single()
   if (po) {
+    const skipped = []
     for (const line of S.poLines) {
-      const prod = S.products.find(p=>p.name.toLowerCase().includes((line.name||'').toLowerCase())||p.sku.toLowerCase()===(line.name||'').toLowerCase())
-      if (prod) await sb.from('purchase_items').insert({ purchase_id:po.id, product_id:prod.id, qty_ordered:parseInt(line.qty)||1, unit_cost:parseFloat(line.cost)||0, line_total:(parseFloat(line.cost)||0)*(parseInt(line.qty)||1) })
+      const prod = await findOrCreateProductForLine(line)
+      if (prod && !prod._missing) {
+        await sb.from('purchase_items').insert({ purchase_id:po.id, product_id:prod.id, qty_ordered:parseInt(line.qty)||1, unit_cost:parseFloat(line.cost)||0, line_total:(parseFloat(line.cost)||0)*(parseInt(line.qty)||1) })
+      } else {
+        skipped.push(line.name||'(unnamed)')
+      }
     }
+    if (skipped.length) notify('⚠️ Some items skipped', `Add Category & Sell Price for: ${skipped.join(', ')}`, false)
   }
   notify('✅ PO Created', poNum)
   closeModal('create-po-modal')
@@ -2247,7 +2296,7 @@ async function savePO() {
 
 async function receivePO(id) {
   await sb.from('purchases').update({ status:'received', received_by:S.user.id, received_at: new Date() }).eq('id', id)
-  // Get items and add to inventory
+  // Get items and add to inventory — every purchase_item is already linked to a fully-categorized product
   const { data: items } = await sb.from('purchase_items').select('*,purchases(branch_id)').eq('purchase_id', id)
   for (const item of (items||[])) {
     const branchId = item.purchases?.branch_id
