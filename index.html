@@ -1,0 +1,2760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ELTEK — OmniPOS</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070A12;--s1:#0D1120;--s2:#111827;--s3:#1a2236;--s4:#1e293b;
+  --b1:#1e2d45;--b2:#253354;--b3:#2d3f5e;
+  --acc:#3b82f6;--acc2:#2563eb;--grn:#10b981;--grn2:#059669;
+  --yel:#f59e0b;--red:#ef4444;--pur:#8b5cf6;--cyn:#06b6d4;--mpesa:#00a651;
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;--t4:#475569;
+}
+body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;overflow:hidden;height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;flex-direction:column}
+.login-card{background:var(--s1);border:1px solid var(--b2);border-radius:16px;padding:36px;width:420px;text-align:center}
+.login-logo{font-size:28px;font-weight:900;color:var(--acc);letter-spacing:-1px;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--t3);margin-bottom:28px}
+.login-select{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t1);padding:10px 12px;border-radius:8px;font-family:inherit;font-size:13px;margin-bottom:12px;outline:none}
+.pin-display{background:var(--s2);border:1.5px solid var(--b2);border-radius:8px;padding:14px;font-size:28px;font-weight:800;letter-spacing:12px;margin-bottom:14px;color:var(--acc);font-family:monospace;min-height:58px;display:flex;align-items:center;justify-content:center}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.pk{height:54px;border-radius:8px;background:var(--s2);border:1px solid var(--b1);color:var(--t1);font-size:20px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.pk:hover{background:var(--s3);border-color:var(--b2)}.pk.red{background:rgba(239,68,68,.15);color:var(--red);border-color:rgba(239,68,68,.3)}.pk.grn{background:rgba(16,185,129,.15);color:var(--grn);border-color:rgba(16,185,129,.3)}
+.float-row{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:14px}
+.float-input{flex:1;background:transparent;border:none;outline:none;color:var(--t1);font-size:14px;font-family:inherit}
+.btn-login{width:100%;padding:14px;border-radius:10px;background:var(--acc);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-login:hover{background:var(--acc2)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed}
+/* APP SHELL */
+#app-shell{display:none;height:100vh;grid-template-rows:44px 1fr;grid-template-columns:176px 1fr}
+#app-shell.visible{display:grid}
+/* TOPBAR */
+.topbar{grid-column:1/-1;background:var(--s1);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 14px;gap:12px;z-index:50}
+.tb-logo{font-size:14px;font-weight:900;color:var(--acc);letter-spacing:-.5px;white-space:nowrap}
+.tb-pill{background:var(--s2);border:1px solid var(--b1);border-radius:5px;padding:3px 10px;font-size:11px;color:var(--t2)}
+.tb-pill span{color:var(--t1);font-weight:600}.tb-sp{flex:1}
+.tb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-g{background:var(--grn);box-shadow:0 0 6px var(--grn)}.dot-y{background:var(--yel)}.dot-r{background:var(--red)}
+.tb-status{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3)}
+.tb-cashier{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b1);border-radius:5px;padding:4px 10px;cursor:pointer}
+.cav{width:22px;height:22px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.tb-time{font-size:12px;font-weight:700;color:var(--t2);font-variant-numeric:tabular-nums;min-width:58px}
+.shift-badge{background:rgba(16,185,129,.15);color:var(--grn);border-radius:4px;padding:3px 8px;font-size:10px;font-weight:700}
+/* SIDEBAR */
+.sidebar{background:linear-gradient(180deg,#0d1324,#0b1020);border-right:1px solid var(--b1);display:flex;flex-direction:column;align-items:stretch;padding:8px;gap:3px;overflow-y:auto}
+.nav-btn{width:100%;min-height:34px;border-radius:8px;display:flex;align-items:center;justify-content:flex-start;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--t2);gap:8px;transition:all .15s;font-size:11px;font-weight:700;font-family:inherit;padding:0 8px;text-align:left;letter-spacing:.01em}
+.nav-btn:hover{background:rgba(59,130,246,.10);border-color:rgba(59,130,246,.22);color:var(--t1)}
+.nav-btn.active{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.45);color:var(--t1);box-shadow:inset 3px 0 0 var(--acc)}
+.nav-icon{width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(148,163,184,.10);font-size:15px;line-height:1}
+.nav-sep{height:1px;background:linear-gradient(90deg,transparent,var(--b1),transparent);margin:5px 4px}
+.nav-admin .nav-icon{background:rgba(139,92,246,.16);color:var(--pur)}
+/* CONTENT */
+.content{overflow:hidden;display:flex;flex-direction:column;background:var(--bg)}
+.screen{display:none;flex:1;overflow:hidden;height:100%}
+.screen.active{display:flex;flex-direction:column;height:100%}
+/* COMMON */
+.page-header{padding:14px 16px 10px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--s1)}
+.page-title{font-size:16px;font-weight:700}.page-subtitle{font-size:11px;color:var(--t3);margin-top:1px}
+.page-actions{display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:0 14px;height:36px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;font-family:inherit;white-space:nowrap}
+.btn-ghost{background:var(--s2);border:1px solid var(--b1);color:var(--t2)}.btn-ghost:hover{border-color:var(--b2);color:var(--t1)}
+.btn-acc{background:var(--acc);color:#fff}.btn-acc:hover{background:var(--acc2)}
+.btn-grn{background:var(--grn);color:#fff}.btn-grn:hover{background:var(--grn2)}
+.btn-red{background:var(--red);color:#fff}.btn-yel{background:var(--yel);color:#000}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:14px}
+.tag{display:inline-flex;align-items:center;gap:3px;border-radius:4px;font-size:10px;font-weight:700;padding:2px 7px}
+.tag-grn{background:rgba(16,185,129,.15);color:var(--grn)}.tag-yel{background:rgba(245,158,11,.15);color:var(--yel)}
+.tag-red{background:rgba(239,68,68,.15);color:var(--red)}.tag-acc{background:rgba(59,130,246,.15);color:var(--acc)}
+.tag-pur{background:rgba(139,92,246,.15);color:var(--pur)}.tag-cyn{background:rgba(6,182,212,.15);color:var(--cyn)}
+.sec-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);font-weight:700;margin-bottom:8px}
+.input{background:var(--s2);border:1px solid var(--b1);color:var(--t1);padding:8px 12px;border-radius:7px;font-family:inherit;font-size:13px;outline:none;width:100%}
+.input:focus{border-color:var(--acc)}
+.table{width:100%;border-collapse:collapse}
+.table th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:700;padding:8px 12px;border-bottom:1px solid var(--b1);text-align:left;background:var(--s1);position:sticky;top:0;z-index:2}
+.table td{padding:9px 12px;border-bottom:1px solid rgba(30,45,69,.5);font-size:12px;vertical-align:middle}
+.table tr:hover td{background:rgba(255,255,255,.02)}.table tr:last-child td{border-bottom:none}
+.stat-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:14px}
+.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);font-weight:700;margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:800;line-height:1}.stat-sub{font-size:10px;color:var(--t3);margin-top:4px}
+.delta-up{color:var(--grn)}.delta-dn{color:var(--red)}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:500}
+.modal-bg.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:14px;width:460px;max-height:90vh;overflow-y:auto}
+.modal-wide{width:640px}
+.modal-hd{padding:16px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:700}
+.modal-x{background:transparent;border:none;color:var(--t2);font-size:22px;cursor:pointer;line-height:1;padding:0 4px}
+.modal-body{padding:18px}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-label{font-size:11px;color:var(--t3);font-weight:600}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+/* NOTIF */
+.notif{position:fixed;top:54px;right:14px;background:var(--s2);border:1px solid var(--b2);border-radius:9px;padding:12px 14px;z-index:600;transform:translateX(130%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);max-width:280px}
+.notif.show{transform:translateX(0)}
+.notif-title{font-size:12px;font-weight:700}.notif-sub{font-size:11px;color:var(--t3);margin-top:2px}
+/* TABS */
+.tab-bar{display:flex;gap:2px;padding:10px 16px 0;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0}
+.tab{padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-size:12px;font-weight:600;color:var(--t3);background:transparent;border:none;font-family:inherit;transition:all .15s;border-bottom:2px solid transparent}
+.tab.active{color:var(--acc);border-bottom-color:var(--acc);background:rgba(59,130,246,.06)}
+.scroll{overflow-y:auto;flex:1}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+/* RECEIPT PRINT */
+@media print{
+  body > *{display:none!important}
+  #print-area{display:block!important;background:#fff;color:#000;font-family:monospace;font-size:12px;padding:10px;width:300px;margin:0 auto}
+}
+#print-area{display:none}
+/* LOADER */
+.loader{display:inline-block;width:16px;height:16px;border:2px solid var(--b2);border-top-color:var(--acc);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--t3)}
+.empty-state .es-icon{font-size:36px;margin-bottom:10px}
+.empty-state .es-text{font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif">
+  <div class="notif-title" id="nt">Done</div>
+  <div class="notif-sub" id="ns"></div>
+</div>
+
+<!-- RECEIPT PRINT AREA -->
+<div id="print-area"></div>
+
+<!-- ==================== LOGIN ==================== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">ELTEK</div>
+    <div class="login-sub">OmniPOS · SplitBudget Enterprise</div>
+    <div class="sec-label" style="text-align:left;margin-bottom:6px">Select Branch</div>
+    <select class="login-select" id="branch-sel"></select>
+    <div class="sec-label" style="text-align:left;margin-bottom:6px">Cashier PIN</div>
+    <div class="pin-display" id="login-pin-disp">_ _ _ _</div>
+    <div class="pin-grid">
+      <button class="pk" onclick="lpin('1')">1</button><button class="pk" onclick="lpin('2')">2</button><button class="pk" onclick="lpin('3')">3</button>
+      <button class="pk" onclick="lpin('4')">4</button><button class="pk" onclick="lpin('5')">5</button><button class="pk" onclick="lpin('6')">6</button>
+      <button class="pk" onclick="lpin('7')">7</button><button class="pk" onclick="lpin('8')">8</button><button class="pk" onclick="lpin('9')">9</button>
+      <button class="pk red" onclick="lpin('c')">CLR</button><button class="pk" onclick="lpin('0')">0</button><button class="pk grn" onclick="lpin('ok')">OK</button>
+    </div>
+    <div class="sec-label" style="text-align:left;margin-bottom:6px">Opening Float (KSh)</div>
+    <div class="float-row"><span style="color:var(--t3)">KSh</span><input class="float-input" id="float-input" placeholder="5000" type="number" value="5000"></div>
+    <button class="btn-login" id="login-btn" onclick="doLogin()">🔓 Begin Shift</button>
+    <div style="font-size:10px;color:var(--t3);margin-top:10px">Default PINs: Cashiers=1234 · Admin=9999</div>
+  </div>
+</div>
+
+<!-- ==================== APP SHELL ==================== -->
+<div id="app-shell">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo">ELTEK OmniPOS</div>
+    <div class="tb-pill">Branch: <span id="tb-branch">—</span></div>
+    <div class="tb-pill">Shift: <span id="tb-shift">#—</span></div>
+    <div class="tb-status"><div class="tb-dot dot-g"></div><span style="color:var(--grn);font-weight:600">Live</span></div>
+    <div class="tb-sp"></div>
+    <span class="shift-badge" id="shift-badge">SHIFT OPEN</span>
+    <div class="tb-cashier" id="tb-cashier-info">
+      <div class="cav" id="tb-initials">—</div>
+      <div><div style="font-weight:600;font-size:11px" id="tb-name">—</div><div style="color:var(--t3);font-size:10px" id="tb-role">—</div></div>
+    </div>
+    <div class="tb-time" id="clock">--:--:--</div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <button class="nav-btn active" id="nav-pos" onclick="gotoScreen('pos')"><span class="nav-icon">🛒</span>POS</button>
+    <button class="nav-btn" id="nav-summary" onclick="gotoScreen('summary')"><span class="nav-icon">📋</span>Sales</button>
+    <button class="nav-btn" id="nav-inventory" onclick="gotoScreen('inventory')"><span class="nav-icon">📦</span>Stock</button>
+    <button class="nav-btn" id="nav-customers" onclick="gotoScreen('customers')"><span class="nav-icon">👥</span>Customers</button>
+    <button class="nav-btn" id="nav-returns" onclick="gotoScreen('returns')"><span class="nav-icon">↩️</span>Returns</button>
+    <div class="nav-sep"></div>
+    <button class="nav-btn" id="nav-budget" onclick="gotoScreen('budget')"><span class="nav-icon">💰</span>Budget</button>
+    <button class="nav-btn" id="nav-expenses" onclick="gotoScreen('expenses')"><span class="nav-icon">💵</span>Expenses</button>
+    <button class="nav-btn" id="nav-shifts" onclick="gotoScreen('shifts')"><span class="nav-icon">🕐</span>Shifts</button>
+    <button class="nav-btn" id="nav-analytics" onclick="gotoScreen('analytics')"><span class="nav-icon">📊</span>Reports</button>
+    <button class="nav-btn nav-admin" id="nav-profit" onclick="adminGate('profit')" style="border:1px solid rgba(139,92,246,.3)"><span class="nav-icon">💹</span>Profit</button>
+    <div class="nav-sep"></div>
+    <button class="nav-btn" id="nav-products" onclick="gotoScreen('products')"><span class="nav-icon">📱</span>Products</button>
+    <button class="nav-btn" id="nav-categories" onclick="gotoScreen('categories')"><span class="nav-icon">🏷️</span>Categories</button>
+    <button class="nav-btn" id="nav-suppliers" onclick="gotoScreen('suppliers')"><span class="nav-icon">🚚</span>Suppliers</button>
+    <button class="nav-btn" id="nav-purchases" onclick="gotoScreen('purchases')"><span class="nav-icon">📥</span>Buying</button>
+    <button class="nav-btn" id="nav-transfers" onclick="gotoScreen('transfers')"><span class="nav-icon">⇄</span>Transfer</button>
+    <div class="nav-sep"></div>
+    <button class="nav-btn" id="nav-users" onclick="gotoScreen('users')"><span class="nav-icon">👤</span>Users</button>
+    <button class="nav-btn" id="nav-settings" onclick="gotoScreen('settings')"><span class="nav-icon">⚙️</span>Settings</button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+<!-- ====== SCREEN: POS ====== -->
+<div class="screen active" id="screen-pos">
+  <div style="display:grid;grid-template-columns:1fr 300px;height:100%;overflow:hidden">
+    <!-- LEFT -->
+    <div style="display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--b1)">
+      <div style="padding:10px 12px;background:var(--s1);border-bottom:1px solid var(--b1);display:flex;gap:8px;flex-shrink:0">
+        <div style="flex:1;display:flex;align-items:center;background:var(--s2);border:1.5px solid var(--acc);border-radius:7px;padding:0 10px;gap:8px">
+          <span style="font-size:16px">⚡</span>
+          <input id="scan-input" style="flex:1;background:transparent;border:none;outline:none;color:var(--t1);font-size:14px;font-family:inherit;padding:8px 0" placeholder="Search product name or SKU…" oninput="searchProducts(this.value)" onkeydown="if(event.key==='Enter')addFirstResult()">
+          <span class="tag tag-acc">READY</span>
+        </div>
+        <button class="btn btn-ghost" onclick="holdCart()">⏸ Hold</button>
+      </div>
+      <!-- Search results dropdown -->
+      <div id="search-results" style="display:none;background:var(--s2);border-bottom:1px solid var(--b1);max-height:220px;overflow-y:auto;flex-shrink:0"></div>
+      <!-- Cart header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:700;color:var(--t2)" id="pos-inv-num">INV-—</span>
+          <span class="tag tag-acc" id="cart-count">0 items</span>
+        </div>
+        <button class="btn btn-ghost" style="height:28px;font-size:11px" onclick="clearCart()">🗑 Clear Cart</button>
+      </div>
+      <!-- Cart body -->
+      <div class="scroll" id="cart-body" style="padding:8px"></div>
+      <!-- Totals -->
+      <div style="padding:12px;background:var(--s1);border-top:1px solid var(--b1);flex-shrink:0">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:4px"><span>Subtotal</span><span id="pos-subtotal">KSh 0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:4px"><span>Discount</span><span id="pos-discount" style="color:var(--grn)">—</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:8px"><span>VAT 16% (incl.)</span><span id="pos-vat">—</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:800;padding-top:8px;border-top:1px solid var(--b1)"><span>Total Due</span><span id="pos-total" style="color:var(--grn)">KSh 0</span></div>
+        <!-- SplitBudget preview -->
+        <div style="background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:8px 10px;margin-top:10px" id="split-preview"></div>
+      </div>
+    </div>
+    <!-- RIGHT PANEL -->
+    <div style="display:flex;flex-direction:column;overflow:hidden">
+      <!-- Customer -->
+      <div style="padding:10px 12px;border-bottom:1px solid var(--b1);flex-shrink:0">
+        <div class="sec-label">Customer (Optional)</div>
+        <div style="display:flex;gap:6px">
+          <input class="input" id="cust-search" placeholder="Search name or phone…" oninput="searchCustomers(this.value)" style="flex:1;height:34px;padding:0 10px">
+          <button class="btn btn-ghost" onclick="openModal('add-customer-modal')" style="height:34px;padding:0 10px">+</button>
+        </div>
+        <div id="cust-results" style="display:none;background:var(--s2);border:1px solid var(--b1);border-radius:6px;margin-top:4px;max-height:120px;overflow-y:auto"></div>
+        <div id="selected-customer" style="display:none;margin-top:6px;background:rgba(59,130,246,.08);border:1px solid var(--acc);border-radius:7px;padding:8px 10px;display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-weight:600;font-size:12px" id="sc-name">—</div><div style="font-size:10px;color:var(--t3)" id="sc-phone">—</div><div style="font-size:10px;color:var(--grn)" id="sc-pts">—</div></div>
+            <button onclick="clearCustomer()" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px">✕</button>
+          </div>
+        </div>
+      </div>
+      <!-- Payment -->
+      <div style="padding:10px 12px;border-bottom:1px solid var(--b1);flex-shrink:0">
+        <div class="sec-label">Payment Method</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div id="pay-cash" onclick="selPayMethod('cash')" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--acc);background:rgba(59,130,246,.1);cursor:pointer;text-align:center">
+            <div style="font-size:17px">💵</div><div style="font-size:10px;font-weight:600;color:var(--acc)">Cash</div>
+          </div>
+          <div id="pay-mpesa" onclick="selPayMethod('mpesa')" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
+            <div style="font-size:17px">📱</div><div style="font-size:10px;font-weight:600;color:var(--t2)">M-Pesa</div>
+          </div>
+          <div id="pay-card" onclick="selPayMethod('card')" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
+            <div style="font-size:17px">💳</div><div style="font-size:10px;font-weight:600;color:var(--t2)">Card</div>
+          </div>
+          <div id="pay-credit" onclick="selPayMethod('credit')" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
+            <div style="font-size:17px">📒</div><div style="font-size:10px;font-weight:600;color:var(--t2)">Credit</div>
+          </div>
+        </div>
+        <div id="cash-received-row" style="margin-top:8px">
+          <div class="sec-label">Cash Received</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input class="input" id="cash-received" type="number" placeholder="Enter amount" style="height:34px" oninput="calcChange()">
+            <span style="font-size:11px;color:var(--t3);white-space:nowrap">Change: <strong id="change-due" style="color:var(--grn)">—</strong></span>
+          </div>
+        </div>
+        <div id="mpesa-ref-row" style="display:none;margin-top:8px">
+          <div class="sec-label">M-Pesa Reference</div>
+          <input class="input" id="mpesa-ref" placeholder="e.g. QGH7Y2X3K1" style="height:34px">
+        </div>
+      </div>
+      <!-- Charge button -->
+      <div style="padding:10px 12px;flex-shrink:0">
+        <button onclick="processCheckout()" id="charge-btn" style="width:100%;padding:14px;border-radius:10px;background:var(--grn);border:none;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" disabled>
+          ✅ Charge — KSh 0
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SCREEN: SALES SUMMARY ====== -->
+<div class="screen" id="screen-summary">
+  <div class="page-header">
+    <div><div class="page-title">📋 Sales</div><div class="page-subtitle" id="summary-subtitle">Today's transactions</div></div>
+    <div class="page-actions">
+      <select class="input" id="summary-date-filter" style="width:auto;height:36px;padding:0 10px" onchange="loadSales()">
+        <option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option>
+      </select>
+      <button class="btn btn-ghost" onclick="exportSalesCSV()">📥 Export CSV</button>
+    </div>
+  </div>
+  <div style="padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0">
+    <div class="g4" id="sales-kpis"></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:8px 16px 6px;display:flex;gap:8px;align-items:center;background:var(--s1);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:2">
+      <input class="input" id="sales-search" style="width:220px;height:32px;padding:0 10px" placeholder="🔍 Search invoice, customer…" oninput="filterSalesTable()">
+      <select class="input" id="sales-pay-filter" style="width:auto;height:32px;padding:0 8px" onchange="filterSalesTable()">
+        <option value="">All Payments</option><option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="card">Card</option><option value="credit">Credit</option>
+      </select>
+    </div>
+    <table class="table"><thead><tr><th>Invoice</th><th>Time</th><th>Customer</th><th>Cashier</th><th>Items</th><th>Payment</th><th>Total</th><th>Status</th><th></th></tr></thead>
+    <tbody id="sales-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- ====== SCREEN: INVENTORY ====== -->
+<div class="screen" id="screen-inventory">
+  <div class="page-header">
+    <div><div class="page-title">📦 Stock</div><div class="page-subtitle">Live inventory by branch</div></div>
+    <div class="page-actions">
+      <select class="input" id="inv-branch-filter" style="width:auto;height:36px;padding:0 10px" onchange="loadInventory()">
+        <option value="">All Branches</option>
+      </select>
+      <button class="btn btn-ghost" onclick="openModal('receive-stock-modal')">+ Receive Stock</button>
+    </div>
+  </div>
+  <div style="padding:8px 16px;display:flex;gap:8px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0;position:sticky;top:0;z-index:2">
+    <input class="input" id="inv-search" style="width:260px;height:32px;padding:0 10px" placeholder="🔍 Product name or SKU…" oninput="filterInvTable()">
+    <select class="input" id="inv-cat-filter" style="width:auto;height:32px;padding:0 8px" onchange="filterInvTable()">
+      <option value="">All Categories</option>
+    </select>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center" id="inv-kpis-mini"></div>
+  </div>
+  <div class="scroll">
+    <table class="table"><thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Nairobi</th><th>Nyeri</th><th>Warehouse</th><th>Reorder</th><th>Cost</th><th>Retail</th><th>Margin</th><th>Status</th></tr></thead>
+    <tbody id="inv-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- ====== SCREEN: CUSTOMERS ====== -->
+<div class="screen" id="screen-customers">
+  <div class="page-header">
+    <div><div class="page-title">👥 Customers</div><div class="page-subtitle">CRM · Loyalty · Purchase history</div></div>
+    <div class="page-actions">
+      <input class="input" id="cust-list-search" style="width:220px;height:36px;padding:0 10px" placeholder="🔍 Name, phone…" oninput="filterCustomerList()">
+      <button class="btn btn-acc" onclick="openModal('add-customer-modal')">+ Add Customer</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:280px 1fr;flex:1;overflow:hidden">
+    <div class="scroll" style="border-right:1px solid var(--b1);padding:8px" id="cust-list"></div>
+    <div class="scroll" style="padding:16px" id="cust-detail">
+      <div class="empty-state"><div class="es-icon">👥</div><div class="es-text">Select a customer to view details</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SCREEN: RETURNS ====== -->
+<div class="screen" id="screen-returns">
+  <div class="page-header">
+    <div><div class="page-title">↩️ Returns</div><div class="page-subtitle">Invoice lookup · Refund processing</div></div>
+    <div class="page-actions"><button class="btn btn-ghost" onclick="loadReturnsLog()">📋 Returns Log</button></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden">
+    <div class="scroll" style="padding:16px;border-right:1px solid var(--b1)">
+      <div class="card" style="margin-bottom:14px">
+        <div class="sec-label">Step 1 — Find Invoice</div>
+        <div style="display:flex;gap:8px">
+          <input class="input" id="return-inv-input" placeholder="Invoice # e.g. INV-001000" style="flex:1">
+          <button class="btn btn-acc" onclick="lookupReturn()">🔍 Lookup</button>
+        </div>
+        <div id="return-result" style="margin-top:12px"></div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="sec-label">Step 2 — Condition</div>
+        <div style="display:flex;gap:8px">
+          <div onclick="selCond('full')" id="cond-full" class="cond-opt" style="flex:1;padding:10px;background:rgba(16,185,129,.1);border:1.5px solid var(--grn);border-radius:8px;text-align:center;cursor:pointer"><div>✅</div><div style="font-size:11px;color:var(--grn)">Full Refund</div></div>
+          <div onclick="selCond('partial')" id="cond-partial" class="cond-opt" style="flex:1;padding:10px;background:var(--s2);border:1.5px solid var(--b1);border-radius:8px;text-align:center;cursor:pointer"><div>⚠️</div><div style="font-size:11px;color:var(--yel)">Partial 70%</div></div>
+          <div onclick="selCond('deny')" id="cond-deny" class="cond-opt" style="flex:1;padding:10px;background:var(--s2);border:1.5px solid var(--b1);border-radius:8px;text-align:center;cursor:pointer"><div>❌</div><div style="font-size:11px;color:var(--red)">Deny</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-label">Step 3 — Refund Method</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+          <label style="display:flex;align-items:center;gap:10px;padding:9px;background:var(--s2);border-radius:7px;cursor:pointer"><input type="radio" name="refund-type" value="store_credit" checked> <span style="font-size:12px;font-weight:600">Store Credit (Loyalty Wallet)</span></label>
+          <label style="display:flex;align-items:center;gap:10px;padding:9px;background:var(--s2);border-radius:7px;cursor:pointer"><input type="radio" name="refund-type" value="cash"> <span style="font-size:12px;font-weight:600">Cash Refund</span></label>
+          <label style="display:flex;align-items:center;gap:10px;padding:9px;background:var(--s2);border-radius:7px;cursor:pointer"><input type="radio" name="refund-type" value="mpesa"> <span style="font-size:12px;font-weight:600">M-Pesa Reversal</span></label>
+        </div>
+        <button class="btn btn-red" style="width:100%;justify-content:center;height:42px" onclick="processReturn()">↩️ Process Return</button>
+      </div>
+    </div>
+    <div class="scroll" style="padding:16px">
+      <div class="sec-label">Recent Returns</div>
+      <div id="returns-log-list"><div class="empty-state"><div class="es-icon">↩️</div><div class="es-text">No returns today</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SCREEN: BUDGET / SPLITBUDGET ====== -->
+<div class="screen" id="screen-budget">
+  <div class="page-header">
+    <div><div class="page-title">💰 SplitBudget</div><div class="page-subtitle">Virtual wallet allocation engine</div></div>
+    <div class="page-actions">
+      <button class="btn btn-ghost" onclick="openModal('split-config-modal')">⚙️ Configure Split %</button>
+    </div>
+  </div>
+  <div style="padding:14px 16px;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0">
+    <div class="g5" id="wallet-cards"></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:10px 16px 6px;display:flex;align-items:center;justify-content:space-between;background:var(--s1);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:2">
+      <span style="font-weight:700;font-size:13px">Distribution Log</span>
+      <button class="btn btn-ghost" style="height:30px" onclick="exportWalletCSV()">📥 CSV</button>
+    </div>
+    <table class="table"><thead><tr><th>Time</th><th>Invoice</th><th>Sale Total</th><th>Restock</th><th>Profit</th><th>OpEx</th><th>Emergency</th><th>Growth</th></tr></thead>
+    <tbody id="wallet-log"></tbody></table>
+  </div>
+</div>
+
+<!-- ====== SCREEN: EXPENSES ====== -->
+<div class="screen" id="screen-expenses">
+  <div class="page-header">
+    <div><div class="page-title">💵 Expenses</div><div class="page-subtitle">Log and track business costs</div></div>
+    <div class="page-actions"><button class="btn btn-acc" onclick="openModal('add-expense-modal')">+ Log Expense</button></div>
+  </div>
+  <div style="padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0">
+    <div class="g4" id="expense-kpis"></div>
+  </div>
+  <div class="scroll">
+    <table class="table"><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Type</th><th>Amount</th><th>Approved By</th></tr></thead>
+    <tbody id="expenses-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- ====== SCREEN: SHIFTS ====== -->
+<div class="screen" id="screen-shifts">
+  <div class="page-header">
+    <div><div class="page-title">🕐 Shifts</div><div class="page-subtitle">Cash reconciliation · Audit trail</div></div>
+    <div class="page-actions">
+      <button class="btn btn-red" onclick="openModal('close-shift-modal')">🔒 Close Shift</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden">
+    <div class="scroll" style="padding:16px;border-right:1px solid var(--b1)" id="shift-active-panel"></div>
+    <div class="scroll" style="padding:16px">
+      <div class="sec-label">All Shifts Today</div>
+      <div id="shifts-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SCREEN: ANALYTICS ====== -->
+<div class="screen" id="screen-analytics">
+  <div class="page-header">
+    <div><div class="page-title">📊 Reports</div><div class="page-subtitle">Revenue · Margins · Trends</div></div>
+    <div class="page-actions">
+      <select class="input" id="analytics-period" style="width:auto;height:36px;padding:0 10px" onchange="loadAnalytics()">
+        <option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option>
+      </select>
+    </div>
+  </div>
+  <div style="padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0">
+    <div class="g4" id="analytics-kpis"></div>
+  </div>
+  <div class="scroll" style="padding:14px">
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><div class="sec-label">Daily Revenue</div><canvas id="revenueChart" height="160"></canvas></div>
+      <div class="card"><div class="sec-label">Payment Methods</div><canvas id="payChart" height="160"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="sec-label">Top Products by Revenue</div><div id="top-products-chart"></div></div>
+      <div class="card"><div class="sec-label">Sales by Cashier</div><div id="cashier-chart"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SCREEN: PROFIT ANALYTICS ====== -->
+<div class="screen" id="screen-profit">
+  <div class="page-header">
+    <div><div class="page-title">💹 Profit Analytics</div><div class="page-subtitle">Category → Subcategory → Product margin breakdown</div></div>
+    <div class="page-actions">
+      <select class="input" id="profit-period" style="width:auto;height:36px;padding:0 10px" onchange="loadProfit()">
+        <option value="7">Last 7 Days</option><option value="30" selected>Last 30 Days</option><option value="90">Last 90 Days</option><option value="365">Last 12 Months</option>
+      </select>
+      <button class="btn btn-ghost" onclick="exportProfitCSV()">⬇ Export CSV</button>
+    </div>
+  </div>
+  <div style="padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0">
+    <div class="g4" id="profit-kpis"></div>
+  </div>
+  <div class="scroll" style="padding:14px">
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><div class="sec-label">Gross Profit by Category</div><canvas id="profitCatChart" height="170"></canvas></div>
+      <div class="card"><div class="sec-label">Margin % by Category</div><canvas id="profitMarginChart" height="170"></canvas></div>
+    </div>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><div class="sec-label">🏆 Highest Margin Products</div><div id="profit-best"></div></div>
+      <div class="card"><div class="sec-label">⚠️ Lowest Margin Products</div><div id="profit-worst"></div></div>
+    </div>
+    <div class="card">
+      <div class="sec-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Detailed Breakdown — click a row to expand</span>
+        <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:11px">Units sold · Revenue · COGS · Gross Profit · Margin %</span>
+      </div>
+      <table class="table"><thead><tr><th></th><th>Category / Subcategory / Product</th><th style="text-align:right">Units</th><th style="text-align:right">Revenue</th><th style="text-align:right">COGS</th><th style="text-align:right">Gross Profit</th><th style="text-align:right">Margin</th></tr></thead>
+      <tbody id="profit-tbody"></tbody></table>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="sec-label">Net Profit (after operating expenses, this period)</div>
+      <div id="profit-net"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SCREEN: CATEGORIES ====== -->
+<div class="screen" id="screen-categories">
+  <div class="page-header">
+    <div><div class="page-title">🏷️ Categories &amp; Brands</div><div class="page-subtitle">Manage how products are grouped — used everywhere you add stock</div></div>
+    <div class="page-actions">
+      <button class="btn btn-acc" onclick="openAddCategory()">+ New Category</button>
+    </div>
+  </div>
+  <div style="padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0">
+    <div class="g4" id="categories-kpis"></div>
+  </div>
+  <div class="scroll" style="padding:14px">
+    <div id="categories-list"></div>
+    <div class="card" style="margin-top:14px">
+      <div class="sec-label">🔖 Brands in use</div>
+      <div id="brands-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SCREEN: PRODUCTS ADMIN ====== -->
+<div class="screen" id="screen-products">
+  <div class="page-header">
+    <div><div class="page-title">📱 Products</div><div class="page-subtitle">Add, edit, price products</div></div>
+    <div class="page-actions">
+      <input class="input" id="prod-search" style="width:220px;height:36px;padding:0 10px" placeholder="🔍 Name, SKU…" oninput="filterProductsAdmin()">
+      <button class="btn btn-acc" onclick="openAddProduct()">+ Add Product</button>
+    </div>
+  </div>
+  <div class="scroll">
+    <table class="table"><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Cost</th><th>Retail</th><th>Margin</th><th>Warranty</th><th>Active</th><th></th></tr></thead>
+    <tbody id="products-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- ====== SCREEN: SUPPLIERS ====== -->
+<div class="screen" id="screen-suppliers">
+  <div class="page-header">
+    <div><div class="page-title">🚚 Suppliers</div><div class="page-subtitle">Vendor management</div></div>
+    <div class="page-actions"><button class="btn btn-acc" onclick="openModal('add-supplier-modal')">+ Add Supplier</button></div>
+  </div>
+  <div class="scroll"><table class="table"><thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Payment Terms</th><th></th></tr></thead>
+  <tbody id="suppliers-tbody"></tbody></table></div>
+</div>
+
+<!-- ====== SCREEN: PURCHASES ====== -->
+<div class="screen" id="screen-purchases">
+  <div class="page-header">
+    <div><div class="page-title">📥 Purchases</div><div class="page-subtitle">Purchase orders · Stock receiving</div></div>
+    <div class="page-actions"><button class="btn btn-acc" onclick="openModal('create-po-modal')">+ Create PO</button></div>
+  </div>
+  <div class="scroll"><table class="table"><thead><tr><th>PO #</th><th>Supplier</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+  <tbody id="purchases-tbody"></tbody></table></div>
+</div>
+
+<!-- ====== SCREEN: TRANSFERS ====== -->
+<div class="screen" id="screen-transfers">
+  <div class="page-header">
+    <div><div class="page-title">⇄ Stock Transfer</div><div class="page-subtitle">Inter-branch transfers</div></div>
+    <div class="page-actions"><button class="btn btn-acc" onclick="openModal('create-transfer-modal')">+ New Transfer</button></div>
+  </div>
+  <div class="scroll"><table class="table"><thead><tr><th>IBT #</th><th>From</th><th>To</th><th>Product</th><th>Qty</th><th>Status</th><th></th></tr></thead>
+  <tbody id="transfers-tbody"></tbody></table></div>
+</div>
+
+<!-- ====== SCREEN: USERS ====== -->
+<div class="screen" id="screen-users">
+  <div class="page-header">
+    <div><div class="page-title">👤 Users</div><div class="page-subtitle">Cashiers · Managers · PINs</div></div>
+    <div class="page-actions"><button class="btn btn-acc" onclick="openModal('add-user-modal')">+ Add User</button></div>
+  </div>
+  <div class="scroll"><table class="table"><thead><tr><th>Name</th><th>Initials</th><th>Role</th><th>Branch</th><th>PIN</th><th>Active</th><th></th></tr></thead>
+  <tbody id="users-tbody"></tbody></table></div>
+</div>
+
+<!-- ====== SCREEN: SETTINGS ====== -->
+<div class="screen" id="screen-settings">
+  <div class="page-header">
+    <div><div class="page-title">⚙️ Settings</div><div class="page-subtitle">Branches · Business info</div></div>
+    <div class="page-actions"><button class="btn btn-acc" onclick="saveSettings()">💾 Save</button></div>
+  </div>
+  <div class="scroll" style="padding:16px">
+    <div class="g2" style="max-width:900px">
+      <div class="card" style="margin-bottom:14px">
+        <div class="sec-label">Business</div>
+        <div class="form-row"><label class="form-label">Business Name</label><input class="input" id="set-biz-name" value="ELTEK"></div>
+        <div class="form-row"><label class="form-label">Admin PIN</label><input class="input" id="set-admin-pin" type="password" placeholder="Current admin PIN required to change"></div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="sec-label">Branches</div>
+        <div id="branches-settings-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-ghost" style="margin-top:10px;width:100%;justify-content:center" onclick="openModal('add-branch-modal')">+ Add Branch</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div><!-- /content -->
+</div><!-- /app-shell -->
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- RECEIPT -->
+<div class="modal-bg" id="receipt-modal">
+  <div class="modal modal-wide">
+    <div class="modal-hd"><span class="modal-title">🧾 Receipt</span><button class="modal-x" onclick="closeModal('receipt-modal')">✕</button></div>
+    <div class="modal-body" id="receipt-body"></div>
+    <div style="padding:0 18px 18px;display:flex;gap:8px">
+      <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="printReceipt()">🖨️ Print</button>
+      <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="newSale()">+ New Sale</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PIN GATE -->
+<div class="modal-bg" id="admin-pin-modal">
+  <div class="modal" style="width:360px">
+    <div class="modal-hd"><span class="modal-title">🔒 Admin Access Required</span><button class="modal-x" onclick="closeModal('admin-pin-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="sec-label" style="margin-bottom:8px">Enter Admin PIN</div>
+      <div class="pin-display" id="admin-pin-disp" style="font-size:22px;min-height:46px">_ _ _ _</div>
+      <div class="pin-grid" style="margin-top:8px">
+        <button class="pk" onclick="apin('1')">1</button><button class="pk" onclick="apin('2')">2</button><button class="pk" onclick="apin('3')">3</button>
+        <button class="pk" onclick="apin('4')">4</button><button class="pk" onclick="apin('5')">5</button><button class="pk" onclick="apin('6')">6</button>
+        <button class="pk" onclick="apin('7')">7</button><button class="pk" onclick="apin('8')">8</button><button class="pk" onclick="apin('9')">9</button>
+        <button class="pk red" onclick="apin('c')">CLR</button><button class="pk" onclick="apin('0')">0</button><button class="pk grn" onclick="apin('ok')">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CUSTOMER -->
+<div class="modal-bg" id="add-customer-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">+ New Customer</span><button class="modal-x" onclick="closeModal('add-customer-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Full Name *</label><input class="input" id="nc-name" placeholder="John Doe"></div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Phone *</label><input class="input" id="nc-phone" placeholder="+254 7XX XXX XXX"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Email</label><input class="input" id="nc-email" placeholder="email@example.com" type="email"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">KRA PIN</label><input class="input" id="nc-kra" placeholder="A001234567P"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Tier</label>
+          <select class="input" id="nc-tier"><option value="retail">Retail</option><option value="loyal">Loyal</option><option value="wholesale">Wholesale</option></select>
+        </div>
+      </div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveCustomer()">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD EXPENSE -->
+<div class="modal-bg" id="add-expense-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">+ Log Expense</span><button class="modal-x" onclick="closeModal('add-expense-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Category *</label>
+          <select class="input" id="exp-cat">
+            <option>Rent</option><option>Salaries</option><option>Utilities</option><option>Transport/Delivery</option>
+            <option>M-Pesa Charges</option><option>Packaging</option><option>Marketing</option><option>Repairs</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin:0"><label class="form-label">Type</label>
+          <select class="input" id="exp-type"><option value="fixed">Fixed</option><option value="variable">Variable</option><option value="once">One-off</option></select>
+        </div>
+      </div>
+      <div class="form-row"><label class="form-label">Description</label><input class="input" id="exp-desc" placeholder="What was this for?"></div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Amount (KSh) *</label><input class="input" id="exp-amt" type="number" placeholder="0"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Date</label><input class="input" id="exp-date" type="date"></div>
+      </div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveExpense()">Log Expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOSE SHIFT -->
+<div class="modal-bg" id="close-shift-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">🔒 Close Shift</span><button class="modal-x" onclick="closeModal('close-shift-modal')">✕</button></div>
+    <div class="modal-body">
+      <div id="close-shift-summary" style="margin-bottom:14px"></div>
+      <div class="form-row"><label class="form-label">Actual Cash in Drawer (KSh)</label><input class="input" id="closing-float" type="number" placeholder="0" oninput="calcVariance()"></div>
+      <div id="variance-display" style="margin-bottom:12px;font-size:13px;font-weight:700"></div>
+      <div class="form-row"><label class="form-label">Notes</label><textarea class="input" id="closing-notes" rows="2" placeholder="Any notes for this shift…" style="resize:none"></textarea></div>
+      <button class="btn btn-red" style="width:100%;justify-content:center;height:42px" onclick="closeShift()">🔒 Close Shift & Log Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT PRODUCT -->
+<div class="modal-bg" id="add-product-modal">
+  <div class="modal modal-wide">
+    <div class="modal-hd"><span class="modal-title" id="product-modal-title">+ Add Product</span><button class="modal-x" onclick="closeModal('add-product-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-product-id">
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Product Name *</label><input class="input" id="p-name" placeholder="Samsung Galaxy A15 5G"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">SKU *</label><input class="input" id="p-sku" placeholder="SAM-A15-BLK"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Category *</label>
+          <input class="input" id="p-cat" placeholder="Smartphones, Accessories, Laptops…" list="cat-list">
+          <datalist id="cat-list"></datalist>
+        </div>
+        <div class="form-row" style="margin:0"><label class="form-label">Subcategory</label>
+          <input class="input" id="p-subcat" placeholder="e.g. Android, iOS, Chargers…" list="subcat-list">
+          <datalist id="subcat-list"></datalist>
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Brand</label><input class="input" id="p-brand" placeholder="Samsung, Apple, Xiaomi…" list="brand-list"><datalist id="brand-list"></datalist></div>
+        <div></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Cost Price (KSh) *</label><input class="input" id="p-cost" type="number" placeholder="0"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Retail Price (KSh) *</label><input class="input" id="p-retail" type="number" placeholder="0"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Reorder Point</label><input class="input" id="p-reorder" type="number" placeholder="5" value="5"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Warranty (months)</label><input class="input" id="p-warranty" type="number" placeholder="0" value="0"></div>
+      </div>
+      <div style="display:flex;gap:16px;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="p-imei"> <span style="font-size:12px">Track IMEI/Serial</span></label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="p-bundle"> <span style="font-size:12px">Is a Bundle</span></label>
+      </div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIVE STOCK -->
+<div class="modal-bg" id="receive-stock-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">+ Receive Stock</span><button class="modal-x" onclick="closeModal('receive-stock-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Product *</label>
+        <input class="input" id="rs-product-search" placeholder="Type product name or SKU…" oninput="searchProductsForReceive(this.value)">
+        <div id="rs-product-results" style="margin-top:4px;display:none;background:var(--s2);border:1px solid var(--b1);border-radius:6px;max-height:120px;overflow-y:auto"></div>
+        <input type="hidden" id="rs-product-id">
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Branch *</label>
+          <select class="input" id="rs-branch"></select>
+        </div>
+        <div class="form-row" style="margin:0"><label class="form-label">Quantity *</label><input class="input" id="rs-qty" type="number" placeholder="0"></div>
+      </div>
+      <div class="form-row"><label class="form-label">Cost Price (KSh)</label><input class="input" id="rs-cost" type="number" placeholder="Leave blank to keep existing"></div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="receiveStock()">✅ Receive Stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD SUPPLIER -->
+<div class="modal-bg" id="add-supplier-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="supplier-modal-title">+ Add Supplier</span><button class="modal-x" onclick="closeModal('add-supplier-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-supplier-id">
+      <div class="form-row"><label class="form-label">Supplier Name *</label><input class="input" id="sup-name" placeholder="Samtech Kenya"></div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Contact Person</label><input class="input" id="sup-contact" placeholder="John Doe"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Phone</label><input class="input" id="sup-phone" placeholder="+254 7XX XXX XXX"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Email</label><input class="input" id="sup-email" placeholder="supplier@email.com" type="email"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Payment Terms</label>
+          <select class="input" id="sup-terms"><option>Cash on delivery</option><option>Net 7</option><option>Net 14</option><option>Net 30</option><option>Prepaid</option></select>
+        </div>
+      </div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveSupplier()">Save Supplier</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE PO -->
+<div class="modal-bg" id="create-po-modal">
+  <div class="modal modal-wide">
+    <div class="modal-hd"><span class="modal-title">+ Create Purchase Order</span><button class="modal-x" onclick="closeModal('create-po-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Supplier *</label><select class="input" id="po-supplier"></select></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Destination Branch *</label><select class="input" id="po-branch"></select></div>
+      </div>
+      <div id="po-items-list" style="margin-bottom:10px"></div>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:12px" onclick="addPOLine()">+ Add Item</button>
+      <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:10px">
+        <span>PO Total:</span><span id="po-total">KSh 0</span>
+      </div>
+      <div class="form-row"><label class="form-label">Notes</label><input class="input" id="po-notes" placeholder="Optional notes"></div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="savePO()">📋 Create PO</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE TRANSFER -->
+<div class="modal-bg" id="create-transfer-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">⇄ New Stock Transfer</span><button class="modal-x" onclick="closeModal('create-transfer-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Product *</label>
+        <input class="input" id="tr-product-search" placeholder="Type product name or SKU…" oninput="searchProductsForTransfer(this.value)">
+        <div id="tr-product-results" style="margin-top:4px;display:none;background:var(--s2);border:1px solid var(--b1);border-radius:6px;max-height:120px;overflow-y:auto"></div>
+        <input type="hidden" id="tr-product-id">
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">From Branch *</label><select class="input" id="tr-from"></select></div>
+        <div class="form-row" style="margin:0"><label class="form-label">To Branch *</label><select class="input" id="tr-to"></select></div>
+      </div>
+      <div class="form-row"><label class="form-label">Quantity *</label><input class="input" id="tr-qty" type="number" placeholder="0"></div>
+      <div class="form-row"><label class="form-label">Notes</label><input class="input" id="tr-notes" placeholder="Optional"></div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveTransfer()">Create Transfer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD USER -->
+<div class="modal-bg" id="add-user-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="user-modal-title">+ Add User</span><button class="modal-x" onclick="closeModal('add-user-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-user-id">
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">Full Name *</label><input class="input" id="u-name" placeholder="Alex Wanjiku"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Initials *</label><input class="input" id="u-initials" placeholder="AW" maxlength="3"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row" style="margin:0"><label class="form-label">PIN (4 digits) *</label><input class="input" id="u-pin" type="password" maxlength="4" placeholder="••••"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Role *</label>
+          <select class="input" id="u-role"><option value="cashier">Cashier</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select>
+        </div>
+      </div>
+      <div class="form-row"><label class="form-label">Branch</label><select class="input" id="u-branch"></select></div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPLIT CONFIG -->
+<div class="modal-bg" id="split-config-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">⚙️ Configure SplitBudget</span><button class="modal-x" onclick="closeModal('split-config-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:12px">Percentages must total 100%</div>
+      <div id="split-config-form"></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;margin:10px 0" id="split-total-display"></div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveSplitConfig()">Save Configuration</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD BRANCH -->
+<div class="modal-bg" id="add-branch-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">+ Add Branch</span><button class="modal-x" onclick="closeModal('add-branch-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Branch Name *</label><input class="input" id="br-name" placeholder="ELTEK — Mombasa CBD"></div>
+      <div class="form-row"><label class="form-label">Location / Address</label><input class="input" id="br-location" placeholder="Biashara St, Mombasa"></div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveBranch()">Add Branch</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="add-category-modal">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">+ New Category</span><button class="modal-x" onclick="closeModal('add-category-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px">Categories are created the moment you save a product with a new name. This just pre-creates one so it shows up in the picker before you add stock for it.</div>
+      <div class="form-row"><label class="form-label">Category Name *</label><input class="input" id="cat-new-name" placeholder="e.g. Phones, Laptops, Accessories"></div>
+      <div class="form-row"><label class="form-label">Subcategory (optional)</label><input class="input" id="cat-new-sub" placeholder="e.g. Smartphones, Feature Phones"></div>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveNewCategory()">Save Category</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SUPA_URL = 'https://kevzrmqrijjieobeytsr.supabase.co'
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtldnpybXFyaWpqaWVvYmV5dHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDExMDUsImV4cCI6MjA5NjA3NzEwNX0.z5gDa5m-Ek6kQwvrduy-wfmD5_ZoXbC0ToTiMcs7mc0'
+let sb
+
+// ============================================================
+// STATE
+// ============================================================
+const S = {
+  user: null, branch: null, shift: null,
+  cart: [], products: [], allCustomers: [],
+  branches: [], wallets: [],
+  selCustomer: null, payMethod: 'cash',
+  adminTarget: null, adminPinBuf: '',
+  loginPinBuf: '', loginPinVisible: '',
+  poLines: [], allSales: [], allProducts: [],
+  charts: {}, returnSale: null, returnCondition: 'full'
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  sb = supabase.createClient(SUPA_URL, SUPA_KEY)
+  clockTick()
+  // set today's date on expense form
+  const ed = document.getElementById('exp-date')
+  if (ed) ed.value = new Date().toISOString().slice(0,10)
+  // load branches for login select
+  const { data: branches } = await sb.from('branches').select('*').eq('is_active', true).order('name')
+  S.branches = branches || []
+  const bsel = document.getElementById('branch-sel')
+  if (bsel) bsel.innerHTML = S.branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('')
+  // populate branch selects in modals
+  populateBranchSelects()
+})
+
+function populateBranchSelects() {
+  const ids = ['inv-branch-filter','rs-branch','po-branch','tr-from','tr-to','u-branch']
+  ids.forEach(id => {
+    const el = document.getElementById(id)
+    if (!el) return
+    const allOpt = id === 'inv-branch-filter' ? '<option value="">All Branches</option>' : ''
+    el.innerHTML = allOpt + S.branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('')
+  })
+}
+
+function clockTick() {
+  const el = document.getElementById('clock')
+  if (el) el.textContent = new Date().toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
+  setTimeout(clockTick, 1000)
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function fmt(n) { return Number(n||0).toLocaleString('en-KE') }
+function fmtDate(d) { return new Date(d).toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'}) }
+function fmtTime(d) { return new Date(d).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+let notifTimer
+function notify(title, sub='', ok=true) {
+  document.getElementById('nt').textContent = title
+  document.getElementById('ns').textContent = sub
+  const el = document.getElementById('notif')
+  el.style.borderColor = ok ? 'var(--b2)' : 'rgba(239,68,68,.4)'
+  el.classList.add('show')
+  clearTimeout(notifTimer)
+  notifTimer = setTimeout(() => el.classList.remove('show'), 3500)
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open') }
+function closeModal(id) { document.getElementById(id).classList.remove('open') }
+
+function gotoScreen(name, skipActive=false) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'))
+  const scr = document.getElementById('screen-'+name)
+  const nav = document.getElementById('nav-'+name)
+  if (scr) scr.classList.add('active')
+  if (nav) nav.classList.add('active')
+  // load data for each screen
+  const loaders = {
+    'summary': loadSales, 'inventory': loadInventory, 'customers': loadCustomers,
+    'budget': loadBudget, 'expenses': loadExpenses, 'shifts': loadShifts,
+    'analytics': loadAnalytics, 'profit': loadProfit, 'categories': loadCategories, 'products': loadProductsAdmin, 'suppliers': loadSuppliers,
+    'purchases': loadPurchases, 'transfers': loadTransfers, 'users': loadUsers,
+    'settings': loadSettings, 'returns': loadReturnsLog
+  }
+  if (loaders[name]) loaders[name]()
+}
+
+function adminGate(screen) {
+  S.adminTarget = screen
+  S.adminPinBuf = ''
+  document.getElementById('admin-pin-disp').textContent = '_ _ _ _'
+  openModal('admin-pin-modal')
+}
+
+// ============================================================
+// LOGIN PIN
+// ============================================================
+function lpin(k) {
+  if (k === 'c') { S.loginPinBuf = ''; S.loginPinVisible = '' }
+  else if (k === 'ok') { doLogin(); return }
+  else if (S.loginPinBuf.length < 4) { S.loginPinBuf += k; S.loginPinVisible += '●' }
+  const dots = S.loginPinBuf.replace(/./g,'●').padEnd(4,'_').split('').join(' ')
+  document.getElementById('login-pin-disp').textContent = dots
+}
+
+async function doLogin() {
+  if (!S.loginPinBuf) { notify('Enter PIN','','❌'); return }
+  const btn = document.getElementById('login-btn')
+  btn.disabled = true; btn.textContent = 'Signing in…'
+  const branchId = document.getElementById('branch-sel').value
+  const float = parseFloat(document.getElementById('float-input').value) || 0
+  const { data: users, error } = await sb.from('users').select('*').eq('pin', S.loginPinBuf).eq('is_active', true)
+  if (error || !users?.length) {
+    notify('❌ Invalid PIN','Try again', false); btn.disabled=false; btn.textContent='🔓 Begin Shift'; S.loginPinBuf=''; document.getElementById('login-pin-disp').textContent='_ _ _ _'; return
+  }
+  S.user = users[0]
+  S.branch = S.branches.find(b => b.id === branchId) || S.branches[0]
+  // Open shift
+  const { data: shift } = await sb.from('shifts').insert({
+    user_id: S.user.id, branch_id: S.branch.id, opening_float: float, status: 'open'
+  }).select().single()
+  S.shift = shift
+  // Load products into memory
+  const { data: prods } = await sb.from('products').select('*').eq('is_active', true).order('name')
+  S.products = prods || []
+  // Load wallets
+  const { data: wallets } = await sb.from('budget_wallets').select('*').eq('branch_id', S.branch.id)
+  S.wallets = wallets || []
+  showApp()
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('app-shell').classList.add('visible')
+  document.getElementById('tb-branch').textContent = S.branch.name.replace('ELTEK — ','')
+  document.getElementById('tb-shift').textContent = '#' + (S.shift?.id?.slice(-4) || '—')
+  document.getElementById('tb-initials').textContent = S.user.initials || S.user.name[0]
+  document.getElementById('tb-name').textContent = S.user.name
+  document.getElementById('tb-role').textContent = S.user.role
+  loadPOS()
+  populateBranchSelects()
+}
+
+// ============================================================
+// ADMIN PIN GATE
+// ============================================================
+function apin(k) {
+  if (k === 'c') S.adminPinBuf = ''
+  else if (k === 'ok') { verifyAdminPin(); return }
+  else if (S.adminPinBuf.length < 4) S.adminPinBuf += k
+  const dots = S.adminPinBuf.replace(/./g,'●').padEnd(4,'_').split('').join(' ')
+  document.getElementById('admin-pin-disp').textContent = dots
+}
+
+async function verifyAdminPin() {
+  const { data: admins } = await sb.from('users').select('id').eq('pin', S.adminPinBuf).eq('role', 'admin')
+  // also allow supervisor
+  const { data: supers } = await sb.from('users').select('id').eq('pin', S.adminPinBuf).in('role',['admin','supervisor'])
+  if (!supers?.length) { notify('❌ Wrong PIN','Admin/Supervisor PIN required', false); S.adminPinBuf=''; document.getElementById('admin-pin-disp').textContent='_ _ _ _'; return }
+  closeModal('admin-pin-modal')
+  gotoScreen(S.adminTarget)
+}
+
+// ============================================================
+// POS — LOAD
+// ============================================================
+async function loadPOS() {
+  // Generate new invoice number
+  const { data: inv } = await sb.rpc('next_invoice_number')
+  document.getElementById('pos-inv-num').textContent = inv || 'INV-—'
+  S.currentInvoice = inv
+  renderCart()
+  renderSplitPreview(0)
+}
+
+// ============================================================
+// POS — PRODUCT SEARCH
+// ============================================================
+function searchProducts(q) {
+  const box = document.getElementById('search-results')
+  if (!q || q.length < 1) { box.style.display='none'; return }
+  const lq = q.toLowerCase()
+  const results = S.products.filter(p =>
+    p.name.toLowerCase().includes(lq) || p.sku.toLowerCase().includes(lq)
+  ).slice(0, 10)
+  if (!results.length) { box.style.display='none'; return }
+  box.style.display = 'block'
+  box.innerHTML = results.map(p => `
+    <div onclick="addToCartFromSearch('${p.id}')" style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;gap:8px" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background=''">
+      <div>
+        <div style="font-weight:600;font-size:12px">${esc(p.name)}</div>
+        <div style="font-size:10px;color:var(--t3);font-family:monospace">${esc(p.sku)} · ${esc(p.category)}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-weight:700;font-size:13px;color:var(--grn)">KSh ${fmt(p.retail_price)}</div>
+        <div style="font-size:10px;color:var(--t3)">Cost: ${fmt(p.cost_price)}</div>
+      </div>
+    </div>`).join('')
+}
+
+function addFirstResult() {
+  const q = document.getElementById('scan-input').value
+  if (!q) return
+  const lq = q.toLowerCase()
+  const p = S.products.find(x => x.sku.toLowerCase() === lq || x.name.toLowerCase().includes(lq))
+  if (p) addToCartFromSearch(p.id)
+}
+
+function addToCartFromSearch(productId) {
+  const p = S.products.find(x => x.id === productId)
+  if (!p) return
+  const existing = S.cart.find(i => i.product_id === p.id)
+  if (existing) { existing.qty++; existing.line_total = existing.qty * existing.unit_price }
+  else {
+    S.cart.push({
+      product_id: p.id, product_name: p.name, sku: p.sku,
+      qty: 1, unit_price: parseFloat(p.retail_price), cost_price: parseFloat(p.cost_price),
+      discount: 0, line_total: parseFloat(p.retail_price),
+      condition: 'brand_new', warranty_months: p.warranty_months || 0
+    })
+  }
+  document.getElementById('scan-input').value = ''
+  document.getElementById('search-results').style.display = 'none'
+  renderCart()
+}
+
+// ============================================================
+// POS — CART
+// ============================================================
+function renderCart() {
+  const body = document.getElementById('cart-body')
+  if (!S.cart.length) {
+    body.innerHTML = `<div class="empty-state" style="margin-top:30px"><div class="es-icon">🛒</div><div class="es-text">Cart is empty — search for a product above</div></div>`
+    updateTotals(0,0,0)
+    document.getElementById('charge-btn').disabled = true
+    document.getElementById('charge-btn').textContent = 'Charge — KSh 0'
+    return
+  }
+  body.innerHTML = S.cart.map((item, idx) => `
+    <div style="display:grid;grid-template-columns:1fr auto;gap:6px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+      <div>
+        <div style="font-weight:600;margin-bottom:3px;font-size:12px">${esc(item.product_name)}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+          <span style="background:var(--s3);border-radius:3px;padding:1px 6px;font-size:10px;font-family:monospace">${esc(item.sku)}</span>
+          ${item.discount>0?`<span style="font-size:10px;color:var(--grn)">−KSh ${fmt(item.discount)} off</span>`:''}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:14px;font-weight:800">KSh ${fmt(item.line_total)}</div>
+        ${item.unit_price !== item.line_total/item.qty ? `<div style="font-size:10px;color:var(--t3);text-decoration:line-through">KSh ${fmt(item.unit_price)}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;justify-content:flex-end">
+          <button onclick="changeQty(${idx},-1)" style="width:22px;height:22px;background:var(--s3);border:1px solid var(--b1);border-radius:4px;cursor:pointer;color:var(--t1);font-size:14px;display:flex;align-items:center;justify-content:center">−</button>
+          <span style="font-size:12px;font-weight:700;min-width:18px;text-align:center">${item.qty}</span>
+          <button onclick="changeQty(${idx},1)" style="width:22px;height:22px;background:var(--s3);border:1px solid var(--b1);border-radius:4px;cursor:pointer;color:var(--t1);font-size:14px;display:flex;align-items:center;justify-content:center">+</button>
+          <button onclick="removeFromCart(${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;opacity:.7;padding:2px">🗑</button>
+        </div>
+      </div>
+    </div>`).join('')
+
+  const subtotal = S.cart.reduce((s,i) => s + i.line_total, 0)
+  const discount = S.cart.reduce((s,i) => s + (i.discount||0)*i.qty, 0)
+  const vat = Math.round(subtotal * 16 / 116 * 100) / 100
+  updateTotals(subtotal, discount, vat)
+  const total = subtotal
+  document.getElementById('charge-btn').disabled = false
+  document.getElementById('charge-btn').textContent = `✅ Charge — KSh ${fmt(total)}`
+  document.getElementById('cash-received').placeholder = total
+  renderSplitPreview(total)
+}
+
+function changeQty(idx, delta) {
+  S.cart[idx].qty = Math.max(1, S.cart[idx].qty + delta)
+  S.cart[idx].line_total = S.cart[idx].qty * (S.cart[idx].unit_price - (S.cart[idx].discount||0))
+  renderCart()
+}
+
+function removeFromCart(idx) { S.cart.splice(idx, 1); renderCart() }
+function clearCart() { S.cart = []; S.selCustomer = null; clearCustomer(); renderCart() }
+
+function holdCart() {
+  if (!S.cart.length) { notify('Cart is empty','Nothing to hold'); return }
+  notify('⏸ Cart Held', `${S.cart.length} items saved`)
+  // simple hold: just notify, cart persists
+}
+
+function updateTotals(subtotal, discount, vat) {
+  document.getElementById('pos-subtotal').textContent = `KSh ${fmt(subtotal)}`
+  document.getElementById('pos-discount').textContent = discount > 0 ? `−KSh ${fmt(discount)}` : '—'
+  document.getElementById('pos-vat').textContent = `KSh ${fmt(vat)}`
+  document.getElementById('pos-total').textContent = `KSh ${fmt(subtotal)}`
+  document.getElementById('cart-count').textContent = `${S.cart.length} item${S.cart.length!==1?'s':''}`
+}
+
+function renderSplitPreview(total) {
+  const box = document.getElementById('split-preview')
+  if (!total || !S.wallets.length) { box.innerHTML = '<div style="font-size:10px;color:var(--t3)">⚡ SplitBudget will auto-allocate on checkout</div>'; return }
+  const colors = {restock:'var(--acc)',profit:'var(--grn)',opex:'var(--pur)',emergency:'var(--yel)',growth:'var(--cyn)'}
+  const items = S.wallets.map(w => ({ name: w.name, pct: parseFloat(w.allocation_pct), amt: total * parseFloat(w.allocation_pct) / 100, color: colors[w.name] || 'var(--t2)' }))
+  box.innerHTML = `
+    <div class="sec-label" style="margin-bottom:5px">⚡ SplitBudget Auto-Allocation</div>
+    <div style="display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden;margin-bottom:6px">
+      ${items.map(i=>`<div style="width:${i.pct}%;background:${i.color}"></div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${items.map(i=>`<span style="font-size:9px;color:var(--t3);display:flex;align-items:center;gap:3px"><span style="width:6px;height:6px;border-radius:50%;background:${i.color};display:inline-block"></span>${i.name} ${fmt(Math.round(i.amt))}</span>`).join('')}
+    </div>`
+}
+
+// ============================================================
+// POS — CUSTOMER SEARCH
+// ============================================================
+async function searchCustomers(q) {
+  const box = document.getElementById('cust-results')
+  if (!q || q.length < 2) { box.style.display='none'; return }
+  const { data } = await sb.from('customers').select('id,name,phone,loyalty_points,tier').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(6)
+  if (!data?.length) { box.style.display='none'; return }
+  box.style.display = 'block'
+  box.innerHTML = (data||[]).map(c => `
+    <div onclick="selectCustomer('${c.id}','${esc(c.name)}','${esc(c.phone||'')}',${c.loyalty_points||0})" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--b1)" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background=''">
+      <div style="font-weight:600;font-size:12px">${esc(c.name)}</div>
+      <div style="font-size:10px;color:var(--t3)">${esc(c.phone||'')} · ${(c.loyalty_points||0).toLocaleString()} pts · ${c.tier}</div>
+    </div>`).join('')
+}
+
+function selectCustomer(id, name, phone, pts) {
+  S.selCustomer = { id, name, phone, pts }
+  document.getElementById('cust-search').value = ''
+  document.getElementById('cust-results').style.display = 'none'
+  const sc = document.getElementById('selected-customer')
+  sc.style.display = 'block'
+  document.getElementById('sc-name').textContent = name
+  document.getElementById('sc-phone').textContent = phone
+  document.getElementById('sc-pts').textContent = `${pts.toLocaleString()} loyalty pts`
+}
+
+function clearCustomer() {
+  S.selCustomer = null
+  document.getElementById('cust-search').value = ''
+  document.getElementById('selected-customer').style.display = 'none'
+}
+
+// ============================================================
+// POS — PAYMENT METHOD
+// ============================================================
+function selPayMethod(m) {
+  S.payMethod = m
+  ;['cash','mpesa','card','credit'].forEach(pm => {
+    const el = document.getElementById('pay-'+pm)
+    if (el) { el.style.borderColor='var(--b1)'; el.style.background='var(--s2)'; el.querySelector('div:last-child').style.color='var(--t2)' }
+  })
+  const sel = document.getElementById('pay-'+m)
+  if (sel) { sel.style.borderColor='var(--acc)'; sel.style.background='rgba(59,130,246,.1)'; sel.querySelector('div:last-child').style.color='var(--acc)' }
+  document.getElementById('cash-received-row').style.display = m==='cash' ? 'block' : 'none'
+  document.getElementById('mpesa-ref-row').style.display = m==='mpesa' ? 'block' : 'none'
+}
+
+function calcChange() {
+  const total = S.cart.reduce((s,i) => s + i.line_total, 0)
+  const received = parseFloat(document.getElementById('cash-received').value) || 0
+  const change = received - total
+  const el = document.getElementById('change-due')
+  el.textContent = change >= 0 ? `KSh ${fmt(change)}` : `Short KSh ${fmt(Math.abs(change))}`
+  el.style.color = change >= 0 ? 'var(--grn)' : 'var(--red)'
+}
+
+// ============================================================
+// POS — CHECKOUT
+// ============================================================
+async function processCheckout() {
+  if (!S.cart.length) { notify('Empty cart','Add products first', false); return }
+  if (!S.shift) { notify('No active shift', 'Please log in again', false); return }
+
+  const btn = document.getElementById('charge-btn')
+  btn.disabled = true; btn.textContent = '⏳ Processing…'
+
+  const total = S.cart.reduce((s,i) => s + i.line_total, 0)
+  const subtotal = total
+  const discount = S.cart.reduce((s,i) => s + (i.discount||0)*i.qty, 0)
+  const vat = Math.round(total * 16 / 116 * 100) / 100
+
+  // Validate cash
+  if (S.payMethod === 'cash') {
+    const received = parseFloat(document.getElementById('cash-received').value) || 0
+    if (received < total) { notify('Insufficient cash', `Need KSh ${fmt(total)}, got KSh ${fmt(received)}`, false); btn.disabled=false; btn.textContent=`✅ Charge — KSh ${fmt(total)}`; return }
+  }
+
+  try {
+    // 1. Create sale
+    const invNum = S.currentInvoice || (await sb.rpc('next_invoice_number')).data
+    const { data: sale, error: se } = await sb.from('sales').insert({
+      invoice_number: invNum,
+      branch_id: S.branch.id, user_id: S.user.id,
+      customer_id: S.selCustomer?.id || null,
+      shift_id: S.shift.id,
+      subtotal, discount, vat_amount: vat, total, status: 'paid'
+    }).select().single()
+    if (se) throw se
+
+    // 2. Insert sale items
+    const items = S.cart.map(i => ({
+      sale_id: sale.id, product_id: i.product_id,
+      qty: i.qty, unit_price: i.unit_price, cost_price: i.cost_price,
+      discount: i.discount || 0, line_total: i.line_total, condition: i.condition
+    }))
+    const { error: ie } = await sb.from('sale_items').insert(items)
+    if (ie) throw ie
+
+    // 3. Payment record
+    await sb.from('payments').insert({
+      sale_id: sale.id, method: S.payMethod, amount: total, status: 'completed',
+      reference: S.payMethod==='mpesa' ? document.getElementById('mpesa-ref')?.value : null
+    })
+
+    // 4. Allocate to wallets
+    await sb.rpc('allocate_to_wallets', { p_sale_id: sale.id, p_branch_id: S.branch.id, p_amount: total })
+
+    // 5. Update wallet cache
+    const { data: wallets } = await sb.from('budget_wallets').select('*').eq('branch_id', S.branch.id)
+    S.wallets = wallets || []
+
+    // 6. Show receipt
+    showReceipt(sale, S.cart, total)
+
+    // 7. Pre-load next invoice number
+    const { data: nextInv } = await sb.rpc('next_invoice_number')
+    S.currentInvoice = nextInv
+
+    notify('✅ Sale Complete', `${invNum} · KSh ${fmt(total)}`)
+  } catch(err) {
+    notify('❌ Checkout Error', err.message, false)
+    btn.disabled=false; btn.textContent=`✅ Charge — KSh ${fmt(total)}`
+  }
+}
+
+// ============================================================
+// RECEIPT
+// ============================================================
+function showReceipt(sale, cartItems, total) {
+  const change = S.payMethod==='cash' ? (parseFloat(document.getElementById('cash-received')?.value||0) - total) : 0
+  const receiptHTML = `
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:16px;font-family:monospace;font-size:12px">
+      <div style="text-align:center;margin-bottom:12px">
+        <div style="font-size:18px;font-weight:900;color:var(--acc)">ELTEK</div>
+        <div style="font-size:11px;color:var(--t3)">${S.branch.name}</div>
+        <div style="font-size:11px;color:var(--t3)">${new Date().toLocaleString('en-KE')}</div>
+        <div style="font-weight:700;margin-top:4px">${sale.invoice_number}</div>
+        <div style="font-size:10px;color:var(--t3)">Cashier: ${S.user.name}</div>
+        ${S.selCustomer ? `<div style="font-size:10px;color:var(--t3)">Customer: ${S.selCustomer.name}</div>` : ''}
+      </div>
+      <div style="border-top:1px dashed var(--b2);border-bottom:1px dashed var(--b2);padding:8px 0;margin-bottom:8px">
+        ${cartItems.map(i=>`
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="flex:1">${i.product_name}</span>
+            <span style="margin:0 8px">×${i.qty}</span>
+            <span style="font-weight:700">KSh ${fmt(i.line_total)}</span>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:3px"><span>VAT 16% (incl.):</span><span>KSh ${fmt(Math.round(total*16/116))}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900;margin-bottom:8px"><span>TOTAL:</span><span style="color:var(--grn)">KSh ${fmt(total)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Payment:</span><span style="text-transform:uppercase;font-weight:700">${S.payMethod}</span></div>
+      ${S.payMethod==='cash'?`<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>Cash Received:</span><span>KSh ${fmt(parseFloat(document.getElementById('cash-received')?.value||total))}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px"><span>Change:</span><span style="color:var(--grn);font-weight:700">KSh ${fmt(Math.max(0,change))}</span></div>`:''}
+      <div style="text-align:center;font-size:10px;color:var(--t3);margin-top:8px;border-top:1px dashed var(--b2);padding-top:8px">
+        Thank you for shopping at ELTEK!<br>Exchange within 7 days with receipt
+      </div>
+    </div>`
+  document.getElementById('receipt-body').innerHTML = receiptHTML
+  // also set print area
+  document.getElementById('print-area').innerHTML = `<div style="text-align:center;font-weight:900;font-size:16px">ELTEK</div>
+    <div style="text-align:center;font-size:10px">${S.branch?.name||''}</div>
+    <div style="text-align:center;font-size:10px">${new Date().toLocaleString('en-KE')}</div>
+    <div style="text-align:center;font-weight:700">${sale.invoice_number}</div>
+    <div style="text-align:center;font-size:10px">Cashier: ${S.user?.name||''}</div>
+    <hr>
+    ${cartItems.map(i=>`<div style="display:flex;justify-content:space-between"><span>${i.product_name} ×${i.qty}</span><span>KSh ${fmt(i.line_total)}</span></div>`).join('')}
+    <hr>
+    <div style="display:flex;justify-content:space-between;font-weight:700"><span>TOTAL</span><span>KSh ${fmt(total)}</span></div>
+    <div style="text-align:center;font-size:10px;margin-top:8px">Thank you for shopping at ELTEK!</div>`
+  openModal('receipt-modal')
+}
+
+function printReceipt() { window.print() }
+
+function newSale() {
+  closeModal('receipt-modal')
+  S.cart = []; S.selCustomer = null
+  clearCustomer()
+  document.getElementById('cash-received').value = ''
+  document.getElementById('change-due').textContent = '—'
+  selPayMethod('cash')
+  renderCart()
+}
+
+function searchProductsForReceive(q) { _productSearch(q, 'rs-product-results', 'rs-product-id', 'rs-product-search', 'rs-cost') }
+function searchProductsForTransfer(q) { _productSearch(q, 'tr-product-results', 'tr-product-id', 'tr-product-search', null) }
+
+function _productSearch(q, resId, hiddenId, inputId, costId) {
+  const box = document.getElementById(resId)
+  if (!q || q.length < 1) { box.style.display='none'; return }
+  const lq = q.toLowerCase()
+  const results = S.products.filter(p => p.name.toLowerCase().includes(lq) || p.sku.toLowerCase().includes(lq)).slice(0,8)
+  if (!results.length) { box.style.display='none'; return }
+  box.style.display = 'block'
+  box.innerHTML = results.map(p => `
+    <div onclick="selectProductFor('${p.id}','${esc(p.name)}','${esc(p.sku)}','${p.cost_price||0}','${resId}','${hiddenId}','${inputId}','${costId||''}')"
+      style="padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--b1)" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background=''">
+      <div style="font-size:12px;font-weight:600">${esc(p.name)}</div>
+      <div style="font-size:10px;color:var(--t3)">${esc(p.sku)}</div>
+    </div>`).join('')
+}
+
+function selectProductFor(id, name, sku, cost, resId, hiddenId, inputId, costId) {
+  document.getElementById(hiddenId).value = id
+  document.getElementById(inputId).value = name + ' (' + sku + ')'
+  document.getElementById(resId).style.display = 'none'
+  if (costId) { const el = document.getElementById(costId); if (el) el.value = cost }
+}
+</script>
+<script>
+// ============================================================
+// SALES SUMMARY
+// ============================================================
+async function loadSales() {
+  const period = document.getElementById('summary-date-filter')?.value || 'today'
+  let from = new Date()
+  if (period === 'today') { from.setHours(0,0,0,0) }
+  else if (period === 'week') { from.setDate(from.getDate() - 7) }
+  else if (period === 'month') { from.setDate(from.getDate() - 30) }
+
+  const { data: sales } = await sb.from('sales')
+    .select(`id,invoice_number,created_at,total,status,is_b2b,void_reason,
+      users(name,initials),customers(name,phone),
+      payments(method,amount),sale_items(id)`)
+    .eq('branch_id', S.branch.id)
+    .gte('created_at', from.toISOString())
+    .order('created_at', { ascending: false })
+
+  S.allSales = sales || []
+  renderSalesKPIs(S.allSales)
+  renderSalesTable(S.allSales)
+  document.getElementById('summary-subtitle').textContent = `${S.branch.name.replace('ELTEK — ','')} · ${period === 'today' ? 'Today' : period === 'week' ? 'Last 7 days' : 'Last 30 days'}`
+}
+
+function renderSalesKPIs(sales) {
+  const paid = sales.filter(s => s.status === 'paid')
+  const gross = paid.reduce((s,x) => s + parseFloat(x.total||0), 0)
+  const count = paid.length
+  const avg = count ? gross/count : 0
+  const voids = sales.filter(s => s.status === 'voided').length
+  document.getElementById('sales-kpis').innerHTML = `
+    <div class="stat-card" style="border-left:3px solid var(--grn)"><div class="stat-label">Gross Revenue</div><div class="stat-val" style="color:var(--grn)">KSh ${fmt(gross)}</div><div class="stat-sub">${count} transactions</div></div>
+    <div class="stat-card" style="border-left:3px solid var(--acc)"><div class="stat-label">Transactions</div><div class="stat-val" style="color:var(--acc)">${count}</div></div>
+    <div class="stat-card" style="border-left:3px solid var(--pur)"><div class="stat-label">Avg Basket</div><div class="stat-val" style="color:var(--pur)">KSh ${fmt(Math.round(avg))}</div></div>
+    <div class="stat-card" style="border-left:3px solid var(--red)"><div class="stat-label">Voids</div><div class="stat-val" style="color:var(--red)">${voids}</div></div>`
+}
+
+function renderSalesTable(sales) {
+  const tbody = document.getElementById('sales-tbody')
+  if (!sales.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t3)">No sales found</td></tr>`; return }
+  tbody.innerHTML = sales.map(s => {
+    const payMethod = s.payments?.[0]?.method || '—'
+    const custName = s.customers?.name || 'Walk-in'
+    const cashier = s.users?.initials || '—'
+    const items = s.sale_items?.length || 0
+    const isVoid = s.status === 'voided'
+    return `<tr style="cursor:pointer;${isVoid?'opacity:.5':''}">
+      <td><span style="font-family:monospace;color:var(--acc);${isVoid?'text-decoration:line-through':''}">${esc(s.invoice_number)}</span></td>
+      <td style="color:var(--t3)">${fmtTime(s.created_at)}</td>
+      <td>${esc(custName)}</td>
+      <td>${esc(cashier)}</td>
+      <td>${items}</td>
+      <td><span class="tag ${payMethod==='cash'?'tag-yel':payMethod==='mpesa'?'tag-grn':'tag-acc'}">${payMethod}</span></td>
+      <td style="font-weight:700;${isVoid?'text-decoration:line-through':''}">${isVoid?'—':'KSh '+fmt(s.total)}</td>
+      <td><span class="tag ${isVoid?'tag-red':'tag-grn'}">${isVoid?'VOID':'PAID'}</span></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px" onclick="reprintReceipt('${s.id}')">Reprint</button>
+        ${!isVoid&&(S.user.role==='admin'||S.user.role==='supervisor')?`<button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px;color:var(--red)" onclick="voidSale('${s.id}','${esc(s.invoice_number)}')">Void</button>`:''}
+      </td>
+    </tr>`}).join('')
+}
+
+function filterSalesTable() {
+  const q = (document.getElementById('sales-search')?.value||'').toLowerCase()
+  const pm = document.getElementById('sales-pay-filter')?.value||''
+  const filtered = S.allSales.filter(s => {
+    const matchQ = !q || s.invoice_number.toLowerCase().includes(q) || (s.customers?.name||'').toLowerCase().includes(q)
+    const matchPay = !pm || s.payments?.[0]?.method === pm
+    return matchQ && matchPay
+  })
+  renderSalesTable(filtered)
+}
+
+async function voidSale(id, invNum) {
+  if (!confirm(`Void invoice ${invNum}? This cannot be undone.`)) return
+  await sb.from('sales').update({ status: 'voided', void_by: S.user.id }).eq('id', id)
+  notify('🗑 Voided', invNum)
+  loadSales()
+}
+
+async function reprintReceipt(saleId) {
+  const { data: sale } = await sb.from('sales').select(`*,users(name),customers(name,phone),payments(method,amount),sale_items(qty,line_total,unit_price,products(name,sku))`).eq('id', saleId).single()
+  if (!sale) return
+  const cartItems = (sale.sale_items||[]).map(i => ({ product_name: i.products?.name||'?', sku: i.products?.sku||'', qty: i.qty, line_total: parseFloat(i.line_total) }))
+  const savedUser = S.user
+  const savedCustomer = S.selCustomer
+  if (sale.customers) S.selCustomer = { name: sale.customers.name, phone: sale.customers.phone }
+  const tmpUser = { name: sale.users?.name || S.user?.name || '—' }
+  showReceipt(sale, cartItems, parseFloat(sale.total))
+  S.selCustomer = savedCustomer
+}
+
+function exportSalesCSV() {
+  if (!S.allSales.length) { notify('No data','', false); return }
+  const rows = [['Invoice','Date','Customer','Cashier','Method','Total','Status']]
+  S.allSales.forEach(s => rows.push([s.invoice_number, new Date(s.created_at).toLocaleString('en-KE'), s.customers?.name||'Walk-in', s.users?.initials||'', s.payments?.[0]?.method||'', s.total, s.status]))
+  downloadCSV('sales.csv', rows)
+}
+
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')
+  const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = filename; a.click()
+}
+
+// ============================================================
+// INVENTORY
+// ============================================================
+let invData = []
+async function loadInventory() {
+  const { data: products } = await sb.from('products').select('*').eq('is_active', true).order('category').order('name')
+  S.allProducts = products || []
+  // load inventory per branch
+  const { data: inv } = await sb.from('inventory').select('product_id,branch_id,qty')
+  // map inventory: { product_id: { branch_id: qty } }
+  const invMap = {}
+  ;(inv||[]).forEach(i => { if (!invMap[i.product_id]) invMap[i.product_id] = {}; invMap[i.product_id][i.branch_id] = i.qty })
+  invData = (products||[]).map(p => ({ ...p, inv: invMap[p.id] || {} }))
+  // populate category filter
+  const cats = [...new Set((products||[]).map(p => p.category))].sort()
+  const catSel = document.getElementById('inv-cat-filter')
+  if (catSel) catSel.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option>${esc(c)}</option>`).join('')
+  const catList = document.getElementById('cat-list')
+  if (catList) catList.innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('')
+  // fill branch filters
+  populateBranchSelects()
+  renderInventoryTable(invData)
+  // mini KPIs
+  const total = invData.length
+  const low = invData.filter(p => {
+    const nairobi = S.branches.find(b=>b.name.includes('Nairobi'))
+    const totalQty = Object.values(p.inv).reduce((s,v)=>s+v,0)
+    return totalQty <= p.reorder_point
+  }).length
+  document.getElementById('inv-kpis-mini').innerHTML = `
+    <span class="tag tag-acc">${total} SKUs</span>
+    ${low > 0 ? `<span class="tag tag-red">⚠️ ${low} Low Stock</span>` : ''}`
+}
+
+function filterInvTable() {
+  const q = (document.getElementById('inv-search')?.value||'').toLowerCase()
+  const cat = document.getElementById('inv-cat-filter')?.value||''
+  const branchId = document.getElementById('inv-branch-filter')?.value||''
+  let filtered = invData
+  if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
+  if (cat) filtered = filtered.filter(p => p.category === cat)
+  renderInventoryTable(filtered, branchId)
+}
+
+function renderInventoryTable(data, filterBranch='') {
+  const bNairobi = S.branches.find(b=>b.name.includes('Nairobi'))?.id
+  const bNyeri = S.branches.find(b=>b.name.includes('Nyeri'))?.id
+  const bWH = S.branches.find(b=>b.name.includes('Warehouse'))?.id
+  const tbody = document.getElementById('inv-tbody')
+  if (!data.length) { tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--t3)">No products found</td></tr>`; return }
+  tbody.innerHTML = data.map(p => {
+    const qN = p.inv[bNairobi] || 0
+    const qY = p.inv[bNyeri] || 0
+    const qW = p.inv[bWH] || 0
+    const totalQ = qN + qY + qW
+    const margin = p.cost_price > 0 ? Math.round((p.retail_price - p.cost_price) / p.retail_price * 100) : 0
+    const low = totalQ <= p.reorder_point && p.reorder_point > 0
+    return `<tr>
+      <td style="font-weight:600">${esc(p.name)}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--t3)">${esc(p.sku)}</td>
+      <td><span class="tag tag-acc" style="font-size:9px">${esc(p.category)}</span></td>
+      <td style="font-weight:${low&&qN<=p.reorder_point?'700':'400'};color:${low&&qN<=p.reorder_point?'var(--red)':'inherit'}">${qN}</td>
+      <td>${qY}</td>
+      <td>${qW}</td>
+      <td style="color:var(--t3);font-size:11px">${p.reorder_point||0}</td>
+      <td>KSh ${fmt(p.cost_price)}</td>
+      <td>KSh ${fmt(p.retail_price)}</td>
+      <td><span class="tag ${margin>=30?'tag-grn':margin>=15?'tag-yel':'tag-red'}">${margin}%</span></td>
+      <td><span class="tag ${low?'tag-red':'tag-grn'}">${low?'LOW':'OK'}</span></td>
+    </tr>`}).join('')
+}
+
+async function receiveStock() {
+  const productId = document.getElementById('rs-product-id').value
+  const branchId = document.getElementById('rs-branch').value
+  const qty = parseInt(document.getElementById('rs-qty').value) || 0
+  const cost = parseFloat(document.getElementById('rs-cost').value) || null
+  if (!productId || !branchId || !qty) { notify('Fill all fields','', false); return }
+  // Upsert inventory
+  const { data: existing } = await sb.from('inventory').select('id,qty').eq('product_id', productId).eq('branch_id', branchId).single()
+  if (existing) {
+    await sb.from('inventory').update({ qty: existing.qty + qty, updated_at: new Date() }).eq('id', existing.id)
+  } else {
+    await sb.from('inventory').insert({ product_id: productId, branch_id: branchId, qty })
+  }
+  if (cost) await sb.from('products').update({ cost_price: cost }).eq('id', productId)
+  notify('✅ Stock Received', `+${qty} units added`)
+  closeModal('receive-stock-modal')
+  document.getElementById('rs-product-search').value = ''
+  document.getElementById('rs-product-id').value = ''
+  document.getElementById('rs-qty').value = ''
+  loadInventory()
+}
+
+// ============================================================
+// CUSTOMERS
+// ============================================================
+let allCustList = []
+async function loadCustomers() {
+  const { data } = await sb.from('customers').select('*').order('name')
+  allCustList = data || []
+  renderCustomerList(allCustList)
+}
+
+function filterCustomerList() {
+  const q = (document.getElementById('cust-list-search')?.value||'').toLowerCase()
+  const filtered = allCustList.filter(c => c.name.toLowerCase().includes(q) || (c.phone||'').includes(q))
+  renderCustomerList(filtered)
+}
+
+function renderCustomerList(customers) {
+  const list = document.getElementById('cust-list')
+  if (!customers.length) { list.innerHTML = `<div class="empty-state"><div class="es-icon">👥</div><div class="es-text">No customers yet</div></div>`; return }
+  list.innerHTML = customers.map(c => `
+    <div onclick="showCustomerDetail('${c.id}')" style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px;cursor:pointer;margin-bottom:5px" onmouseover="this.style.borderColor='var(--acc)'" onmouseout="this.style.borderColor='var(--b1)'">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pur),var(--acc));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${(c.name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:12px">${esc(c.name)}</div>
+        <div style="font-size:10px;color:var(--t3)">${esc(c.phone||'—')}</div>
+        <div style="display:flex;gap:4px;margin-top:2px"><span class="tag tag-${c.tier==='wholesale'?'pur':c.tier==='loyal'?'yel':'grn'}" style="font-size:9px">${c.tier||'retail'}</span><span style="font-size:9px;color:var(--grn)">${(c.loyalty_points||0).toLocaleString()} pts</span></div>
+      </div>
+    </div>`).join('')
+}
+
+async function showCustomerDetail(id) {
+  const c = allCustList.find(x => x.id === id)
+  if (!c) return
+  const { data: history } = await sb.from('sales').select('invoice_number,total,created_at,payments(method)').eq('customer_id', id).order('created_at',{ascending:false}).limit(10)
+  const detail = document.getElementById('cust-detail')
+  detail.innerHTML = `
+    <div class="g2" style="max-width:700px">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--pur),var(--acc));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px">${c.name[0].toUpperCase()}</div>
+          <div><div style="font-size:16px;font-weight:700">${esc(c.name)}</div><div style="font-size:11px;color:var(--t3)">Customer since ${fmtDate(c.created_at)}</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Phone</span><span>${esc(c.phone||'—')}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Email</span><span>${esc(c.email||'—')}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">KRA PIN</span><span style="font-family:monospace">${esc(c.kra_pin||'—')}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Tier</span><span class="tag tag-${c.tier==='wholesale'?'pur':c.tier==='loyal'?'yel':'grn'}">${c.tier||'retail'}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Total Spent</span><span style="font-weight:700;color:var(--grn)">KSh ${fmt(c.total_spent||0)}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Loyalty Points</span><span style="font-weight:700;color:var(--acc)">${(c.loyalty_points||0).toLocaleString()} pts</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--t3)">Visits</span><span>${c.visit_count||0}</span></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:12px">
+          <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="editCustomer('${c.id}')">✏️ Edit</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-label">Purchase History</div>
+        ${(history||[]).length ? (history||[]).map(h=>`
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--b1);font-size:12px">
+            <span><span style="font-family:monospace;color:var(--acc)">${esc(h.invoice_number)}</span></span>
+            <span style="color:var(--t3)">${fmtDate(h.created_at)}</span>
+            <span style="font-weight:700">KSh ${fmt(h.total)}</span>
+          </div>`).join('') : '<div style="color:var(--t3);font-size:12px">No purchases yet</div>'}
+      </div>
+    </div>`
+}
+
+async function saveCustomer(editing=false) {
+  const name = document.getElementById('nc-name').value.trim()
+  const phone = document.getElementById('nc-phone').value.trim()
+  const email = document.getElementById('nc-email').value.trim()
+  const kra = document.getElementById('nc-kra').value.trim()
+  const tier = document.getElementById('nc-tier').value
+  if (!name || !phone) { notify('Name & Phone required','', false); return }
+  const payload = { name, phone, email: email||null, kra_pin: kra||null, tier, branch_id: S.branch.id }
+  const editId = document.getElementById('edit-customer-id')?.value
+  if (editId) { await sb.from('customers').update(payload).eq('id', editId) }
+  else { await sb.from('customers').insert(payload) }
+  notify('✅ Customer Saved', name)
+  closeModal('add-customer-modal')
+  ;['nc-name','nc-phone','nc-email','nc-kra'].forEach(id => { const el=document.getElementById(id); if(el)el.value='' })
+  loadCustomers()
+  // Refresh product list for POS customer search
+  const { data } = await sb.from('customers').select('*').order('name')
+  S.allCustomers = data || []
+}
+
+function editCustomer(id) {
+  const c = allCustList.find(x => x.id === id)
+  if (!c) return
+  document.getElementById('nc-name').value = c.name||''
+  document.getElementById('nc-phone').value = c.phone||''
+  document.getElementById('nc-email').value = c.email||''
+  document.getElementById('nc-kra').value = c.kra_pin||''
+  document.getElementById('nc-tier').value = c.tier||'retail'
+  let hidId = document.getElementById('edit-customer-id')
+  if (!hidId) { hidId = document.createElement('input'); hidId.type='hidden'; hidId.id='edit-customer-id'; document.getElementById('add-customer-modal').appendChild(hidId) }
+  hidId.value = id
+  openModal('add-customer-modal')
+}
+
+// ============================================================
+// BUDGET / SPLITBUDGET WALLETS
+// ============================================================
+async function loadBudget() {
+  const { data: wallets } = await sb.from('budget_wallets').select('*').eq('branch_id', S.branch.id).order('name')
+  S.wallets = wallets || []
+  renderWalletCards(S.wallets)
+  // load wallet transaction log
+  const { data: txns } = await sb.from('wallet_transactions')
+    .select('*,sales(invoice_number,created_at,total)')
+    .eq('wallet_id', 'in.(' + S.wallets.map(w=>w.id).join(',') + ')')
+    .order('created_at', { ascending: false }).limit(50)
+  // better: join via wallet_id filter
+  const walletIds = S.wallets.map(w=>w.id)
+  const { data: txLog } = await sb.from('wallet_transactions')
+    .select('*,sales(invoice_number,created_at,total)')
+    .in('wallet_id', walletIds.length ? walletIds : ['00000000-0000-0000-0000-000000000000'])
+    .order('created_at', { ascending: false }).limit(60)
+  renderWalletLog(txLog || [], wallets || [])
+  // Load split config modal
+  loadSplitConfigModal(wallets || [])
+}
+
+function renderWalletCards(wallets) {
+  const colors = { restock:'var(--acc)', profit:'var(--grn)', opex:'var(--pur)', emergency:'var(--yel)', growth:'var(--cyn)' }
+  const icons = { restock:'📦', profit:'💚', opex:'🔧', emergency:'🛡️', growth:'🚀' }
+  const box = document.getElementById('wallet-cards')
+  box.innerHTML = wallets.map(w => `
+    <div class="card" style="border-top:3px solid ${colors[w.name]||'var(--acc)'};cursor:pointer">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span class="sec-label" style="margin:0">${icons[w.name]||'💼'} ${w.name.toUpperCase()}</span>
+        <span class="tag ${w.is_locked?'tag-red':'tag-grn'}" style="font-size:9px">${w.is_locked?'🔒 LOCKED':'OPEN'}</span>
+      </div>
+      <div style="font-size:22px;font-weight:800;color:${colors[w.name]||'var(--acc)'}">KSh ${fmt(w.balance)}</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:4px">${w.allocation_pct}% allocation</div>
+      <div style="height:3px;background:var(--b1);border-radius:2px;margin-top:8px">
+        <div style="height:100%;width:${Math.min(100,parseFloat(w.balance)/Math.max(1,...wallets.map(x=>parseFloat(x.balance)))*100)}%;background:${colors[w.name]||'var(--acc)'};border-radius:2px"></div>
+      </div>
+    </div>`).join('')
+}
+
+function renderWalletLog(txns, wallets) {
+  // Group by sale
+  const byInv = {}
+  txns.forEach(t => {
+    const key = t.sale_id || t.id
+    if (!byInv[key]) byInv[key] = { time: t.created_at, inv: t.sales?.invoice_number||'—', total: t.sales?.total||0, items: {} }
+    const wName = wallets.find(w=>w.id===t.wallet_id)?.name || '?'
+    byInv[key].items[wName] = parseFloat(t.amount)
+  })
+  const rows = Object.values(byInv).slice(0,30)
+  const tbody = document.getElementById('wallet-log')
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--t3)">No transactions yet</td></tr>`; return }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td style="color:var(--t3)">${fmtTime(r.time)}</td>
+    <td style="font-family:monospace;color:var(--acc)">${esc(r.inv)}</td>
+    <td style="font-weight:700">KSh ${fmt(r.total)}</td>
+    <td style="color:var(--acc)">${r.items.restock ? fmt(Math.round(r.items.restock)) : '—'}</td>
+    <td style="color:var(--grn)">${r.items.profit ? fmt(Math.round(r.items.profit)) : '—'}</td>
+    <td style="color:var(--pur)">${r.items.opex ? fmt(Math.round(r.items.opex)) : '—'}</td>
+    <td style="color:var(--yel)">${r.items.emergency ? fmt(Math.round(r.items.emergency)) : '—'}</td>
+    <td style="color:var(--cyn)">${r.items.growth ? fmt(Math.round(r.items.growth)) : '—'}</td>
+  </tr>`).join('')
+}
+
+function loadSplitConfigModal(wallets) {
+  const form = document.getElementById('split-config-form')
+  if (!form) return
+  form.innerHTML = wallets.map(w => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="flex:1;font-size:12px;font-weight:600;text-transform:capitalize">${w.name}</span>
+      <input class="input" type="number" id="split-${w.id}" value="${w.allocation_pct}" min="0" max="100" style="width:80px;height:32px;text-align:center" oninput="updateSplitTotal()">
+      <span style="font-size:12px;color:var(--t3)">%</span>
+    </div>`).join('')
+  updateSplitTotal()
+}
+
+function updateSplitTotal() {
+  const wallets = S.wallets
+  let total = 0
+  wallets.forEach(w => { const el = document.getElementById('split-'+w.id); if(el) total += parseFloat(el.value)||0 })
+  const display = document.getElementById('split-total-display')
+  if (display) {
+    display.textContent = `Total: ${total}%`
+    display.style.color = total === 100 ? 'var(--grn)' : 'var(--red)'
+  }
+}
+
+async function saveSplitConfig() {
+  const wallets = S.wallets
+  let total = 0
+  wallets.forEach(w => { const el = document.getElementById('split-'+w.id); if(el) total += parseFloat(el.value)||0 })
+  if (Math.round(total) !== 100) { notify('Must total 100%', `Currently ${total}%`, false); return }
+  for (const w of wallets) {
+    const el = document.getElementById('split-'+w.id)
+    if (el) await sb.from('budget_wallets').update({ allocation_pct: parseFloat(el.value) }).eq('id', w.id)
+  }
+  notify('✅ Split Updated', 'New percentages saved')
+  closeModal('split-config-modal')
+  loadBudget()
+}
+
+function exportWalletCSV() { notify('Export','Wallet CSV export coming soon') }
+</script>
+<script>
+// ============================================================
+// EXPENSES
+// ============================================================
+async function loadExpenses() {
+  const { data } = await sb.from('expenses').select(`*,users(name)`).eq('branch_id', S.branch.id).order('expense_date',{ascending:false}).order('created_at',{ascending:false}).limit(100)
+  const expenses = data || []
+  const total = expenses.reduce((s,e)=>s+parseFloat(e.amount||0),0)
+  const fixed = expenses.filter(e=>e.type==='fixed').reduce((s,e)=>s+parseFloat(e.amount||0),0)
+  const variable = expenses.filter(e=>e.type==='variable').reduce((s,e)=>s+parseFloat(e.amount||0),0)
+  document.getElementById('expense-kpis').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Expenses</div><div class="stat-val" style="color:var(--red)">KSh ${fmt(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Fixed Costs</div><div class="stat-val">KSh ${fmt(fixed)}</div></div>
+    <div class="stat-card"><div class="stat-label">Variable Costs</div><div class="stat-val">KSh ${fmt(variable)}</div></div>
+    <div class="stat-card"><div class="stat-label">Entries</div><div class="stat-val">${expenses.length}</div></div>`
+  const tbody = document.getElementById('expenses-tbody')
+  if (!expenses.length) { tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3)">No expenses logged</td></tr>`; return }
+  tbody.innerHTML = expenses.map(e=>`<tr>
+    <td style="color:var(--t3)">${fmtDate(e.expense_date||e.created_at)}</td>
+    <td style="font-weight:600">${esc(e.category)}</td>
+    <td>${esc(e.description||'—')}</td>
+    <td><span class="tag ${e.type==='fixed'?'tag-red':e.type==='variable'?'tag-yel':'tag-pur'}">${e.type||'variable'}</span></td>
+    <td style="font-weight:700;color:var(--red)">KSh ${fmt(e.amount)}</td>
+    <td style="color:var(--t3)">${esc(e.users?.name||'—')}</td>
+  </tr>`).join('')
+}
+
+async function saveExpense() {
+  const cat = document.getElementById('exp-cat').value
+  const desc = document.getElementById('exp-desc').value.trim()
+  const amt = parseFloat(document.getElementById('exp-amt').value)||0
+  const type = document.getElementById('exp-type').value
+  const date = document.getElementById('exp-date').value || new Date().toISOString().slice(0,10)
+  if (!cat || !amt) { notify('Category & Amount required','',false); return }
+  await sb.from('expenses').insert({ branch_id:S.branch.id, category:cat, description:desc||null, amount:amt, type, expense_date:date, approved_by:S.user.id })
+  notify('✅ Expense Logged', `KSh ${fmt(amt)} · ${cat}`)
+  closeModal('add-expense-modal')
+  document.getElementById('exp-desc').value=''
+  document.getElementById('exp-amt').value=''
+  loadExpenses()
+}
+
+// ============================================================
+// SHIFTS
+// ============================================================
+async function loadShifts() {
+  const today = new Date(); today.setHours(0,0,0,0)
+  const { data: shifts } = await sb.from('shifts').select(`*,users(name,initials)`).eq('branch_id', S.branch.id).gte('opened_at', today.toISOString()).order('opened_at',{ascending:false})
+  // Cash sales for current shift
+  const { data: cashSales } = S.shift ? await sb.from('sales').select('total,payments(method)').eq('shift_id', S.shift.id).eq('status','paid') : { data: [] }
+  const cashTotal = (cashSales||[]).filter(s=>s.payments?.some(p=>p.method==='cash')).reduce((s,x)=>s+parseFloat(x.total||0),0)
+  const expected = parseFloat(S.shift?.opening_float||0) + cashTotal
+  // Active shift panel
+  const activePanel = document.getElementById('shift-active-panel')
+  if (S.shift) {
+    const dur = Math.floor((Date.now() - new Date(S.shift.opened_at)) / 60000)
+    activePanel.innerHTML = `
+      <div class="card" style="margin-bottom:14px;border-color:rgba(16,185,129,.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span class="sec-label" style="margin:0">Active Shift</span>
+          <span class="tag tag-grn">OPEN · ${dur}m</span>
+        </div>
+        <div class="g2" style="gap:8px">
+          <div style="background:var(--s2);border-radius:7px;padding:10px"><div style="font-size:10px;color:var(--t3)">Cashier</div><div style="font-weight:600;margin-top:2px">${esc(S.user.name)}</div></div>
+          <div style="background:var(--s2);border-radius:7px;padding:10px"><div style="font-size:10px;color:var(--t3)">Branch</div><div style="font-weight:600;margin-top:2px">${esc(S.branch.name.replace('ELTEK — ',''))}</div></div>
+          <div style="background:var(--s2);border-radius:7px;padding:10px"><div style="font-size:10px;color:var(--t3)">Opening Float</div><div style="font-weight:600;margin-top:2px;color:var(--acc)">KSh ${fmt(S.shift.opening_float)}</div></div>
+          <div style="background:var(--s2);border-radius:7px;padding:10px"><div style="font-size:10px;color:var(--t3)">Expected Cash</div><div style="font-weight:600;margin-top:2px;color:var(--grn)">KSh ${fmt(expected)}</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-label">Today's Collections</div>
+        <div id="shift-collections"></div>
+      </div>`
+    loadShiftCollections()
+  } else {
+    activePanel.innerHTML = `<div class="empty-state"><div class="es-icon">🕐</div><div class="es-text">No active shift</div></div>`
+  }
+  // All shifts today
+  const list = document.getElementById('shifts-list')
+  list.innerHTML = (shifts||[]).map(sh=>`
+    <div class="card" style="border-left:3px solid ${sh.status==='open'?'var(--grn)':'var(--t3)'}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div class="cav" style="background:var(--pur)">${esc(sh.users?.initials||'?')}</div>
+        <div><div style="font-weight:600">${esc(sh.users?.name||'Unknown')}</div><div style="font-size:10px;color:var(--t3)">Opened ${fmtTime(sh.opened_at)}</div></div>
+        <span class="tag ${sh.status==='open'?'tag-grn':'tag-yel'}" style="margin-left:auto">${sh.status==='open'?'ACTIVE':'CLOSED'}</span>
+      </div>
+      ${sh.status==='closed'?`<div style="font-size:11px;color:var(--t3)">Float: KSh ${fmt(sh.opening_float)} → Cash: KSh ${fmt(sh.closing_float||0)} · Variance: <span style="${parseFloat(sh.cash_variance||0)===0?'color:var(--grn)':'color:var(--red)'}">${parseFloat(sh.cash_variance||0)>=0?'+':''}KSh ${fmt(sh.cash_variance||0)}</span></div>`:''}
+    </div>`).join('') || '<div class="empty-state"><div class="es-text">No shifts today</div></div>'
+  // Close shift modal summary
+  document.getElementById('close-shift-summary').innerHTML = `
+    <div style="background:var(--s2);border-radius:8px;padding:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Opening Float</span><span>KSh ${fmt(S.shift?.opening_float||0)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Expected Cash in Drawer</span><span style="font-weight:700;color:var(--grn)">KSh ${fmt(expected)}</span></div>
+    </div>`
+}
+
+async function loadShiftCollections() {
+  if (!S.shift) return
+  const { data: sales } = await sb.from('sales').select('total,payments(method,amount)').eq('shift_id', S.shift.id).eq('status','paid')
+  const byMethod = {}
+  ;(sales||[]).forEach(s => (s.payments||[]).forEach(p => { byMethod[p.method] = (byMethod[p.method]||0) + parseFloat(p.amount||0) }))
+  const total = Object.values(byMethod).reduce((s,v)=>s+v,0)
+  const el = document.getElementById('shift-collections')
+  if (!el) return
+  el.innerHTML = Object.entries(byMethod).map(([m,amt])=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b1)">
+      <div style="font-weight:600;font-size:12px;text-transform:capitalize">${m}</div>
+      <span style="font-size:14px;font-weight:700;color:var(--grn)">KSh ${fmt(amt)}</span>
+    </div>`).join('') + `<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;padding-top:8px"><span>Total</span><span style="color:var(--grn)">KSh ${fmt(total)}</span></div>`
+}
+
+function calcVariance() {
+  const closing = parseFloat(document.getElementById('closing-float')?.value)||0
+  const expected = parseFloat(document.getElementById('close-shift-summary')?.querySelector('[style*="font-weight:700"]')?.textContent?.replace(/[^0-9]/g,'')||0)
+  const variance = closing - expected
+  const el = document.getElementById('variance-display')
+  if (el) {
+    el.textContent = `Variance: ${variance>=0?'+':''}KSh ${fmt(variance)}`
+    el.style.color = variance === 0 ? 'var(--grn)' : variance > 0 ? 'var(--yel)' : 'var(--red)'
+  }
+}
+
+async function closeShift() {
+  if (!S.shift) { notify('No active shift','',false); return }
+  const closing = parseFloat(document.getElementById('closing-float')?.value)||0
+  const notes = document.getElementById('closing-notes')?.value||''
+  // Calculate expected
+  const { data: sales } = await sb.from('sales').select('total,payments(method,amount)').eq('shift_id', S.shift.id).eq('status','paid')
+  const cashSales = (sales||[]).flatMap(s=>(s.payments||[]).filter(p=>p.method==='cash'))
+  const cashCollected = cashSales.reduce((s,p)=>s+parseFloat(p.amount||0),0)
+  const expected = parseFloat(S.shift.opening_float||0) + cashCollected
+  const variance = closing - expected
+  await sb.from('shifts').update({ status:'closed', closed_at: new Date(), closing_float: closing, expected_cash: expected, cash_variance: variance, notes }).eq('id', S.shift.id)
+  notify('🔒 Shift Closed', `Variance: KSh ${fmt(variance)}`)
+  closeModal('close-shift-modal')
+  // Log out
+  setTimeout(() => { S.user=null; S.branch=null; S.shift=null; S.cart=[]; document.getElementById('app-shell').classList.remove('visible'); document.getElementById('login-screen').style.display='flex'; S.loginPinBuf=''; document.getElementById('login-pin-disp').textContent='_ _ _ _' }, 1500)
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+async function loadAnalytics() {
+  const days = parseInt(document.getElementById('analytics-period')?.value||7)
+  const from = new Date(); from.setDate(from.getDate() - days); from.setHours(0,0,0,0)
+  const { data: sales } = await sb.from('sales').select(`total,created_at,payments(method,amount),sale_items(qty,line_total,cost_price,product_id,products(name)),users(name,initials)`).eq('branch_id', S.branch.id).eq('status','paid').gte('created_at', from.toISOString()).order('created_at')
+  const allS = sales || []
+  const revenue = allS.reduce((s,x)=>s+parseFloat(x.total||0),0)
+  const cogs = allS.flatMap(s=>s.sale_items||[]).reduce((s,i)=>s+parseFloat(i.cost_price||0)*i.qty,0)
+  const gross = revenue - cogs
+  const margin = revenue ? Math.round(gross/revenue*100) : 0
+  document.getElementById('analytics-kpis').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-val" style="color:var(--grn)">KSh ${fmt(Math.round(revenue))}</div><div class="stat-sub">${allS.length} transactions</div></div>
+    <div class="stat-card"><div class="stat-label">Gross Profit</div><div class="stat-val" style="color:var(--acc)">KSh ${fmt(Math.round(gross))}</div><div class="stat-sub">${margin}% margin</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Daily</div><div class="stat-val" style="color:var(--pur)">KSh ${fmt(Math.round(revenue/days))}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Basket</div><div class="stat-val">KSh ${fmt(allS.length?Math.round(revenue/allS.length):0)}</div></div>`
+  // Daily revenue chart
+  const byDay = {}
+  allS.forEach(s => { const d=s.created_at.slice(0,10); byDay[d]=(byDay[d]||0)+parseFloat(s.total||0) })
+  const days7 = []; for(let i=days-1;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days7.push(d.toISOString().slice(0,10)) }
+  renderLineChart('revenueChart', days7.map(d=>d.slice(5)), days7.map(d=>Math.round(byDay[d]||0)), 'KSh Revenue', '#3b82f6')
+  // Payment methods
+  const byPay = {}
+  allS.forEach(s=>(s.payments||[]).forEach(p=>{ byPay[p.method]=(byPay[p.method]||0)+parseFloat(p.amount||0) }))
+  renderDoughnut('payChart', Object.keys(byPay), Object.values(byPay).map(v=>Math.round(v)))
+  // Top products
+  const byProd = {}
+  allS.forEach(s=>(s.sale_items||[]).forEach(i=>{ const n=i.products?.name||'Unknown'; byProd[n]=(byProd[n]||0)+parseFloat(i.line_total||0) }))
+  const top = Object.entries(byProd).sort((a,b)=>b[1]-a[1]).slice(0,6)
+  document.getElementById('top-products-chart').innerHTML = top.map(([name,rev])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="flex:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>
+      <div style="width:100px;height:6px;background:var(--b1);border-radius:3px"><div style="height:100%;width:${top[0]?Math.round(rev/top[0][1]*100):0}%;background:var(--acc);border-radius:3px"></div></div>
+      <span style="font-size:11px;font-weight:700;width:70px;text-align:right">KSh ${fmt(Math.round(rev))}</span>
+    </div>`).join('')
+  // Cashier breakdown
+  const byCashier = {}
+  allS.forEach(s=>{ const n=s.users?.name||'Unknown'; byCashier[n]=(byCashier[n]||0)+parseFloat(s.total||0) })
+  const topC = Object.entries(byCashier).sort((a,b)=>b[1]-a[1])
+  document.getElementById('cashier-chart').innerHTML = topC.map(([name,rev])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="flex:1;font-size:12px">${esc(name)}</div>
+      <div style="width:100px;height:6px;background:var(--b1);border-radius:3px"><div style="height:100%;width:${topC[0]?Math.round(rev/topC[0][1]*100):0}%;background:var(--grn);border-radius:3px"></div></div>
+      <span style="font-size:11px;font-weight:700;width:70px;text-align:right">KSh ${fmt(Math.round(rev))}</span>
+    </div>`).join('')
+}
+
+function renderLineChart(id, labels, data, label, color) {
+  const ctx = document.getElementById(id)
+  if (!ctx) return
+  if (S.charts[id]) S.charts[id].destroy()
+  S.charts[id] = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ label, data, borderColor:color, backgroundColor:color+'22', fill:true, tension:.4, pointRadius:3 }] }, options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'#1e2d4530'},ticks:{color:'#64748b',font:{size:10}}}, y:{grid:{color:'#1e2d4530'},ticks:{color:'#64748b',font:{size:10},callback:v=>'KSh '+fmt(v)}} } } })
+}
+
+function renderDoughnut(id, labels, data) {
+  const ctx = document.getElementById(id)
+  if (!ctx) return
+  if (S.charts[id]) S.charts[id].destroy()
+  const colors = ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#06b6d4']
+  S.charts[id] = new Chart(ctx, { type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:0 }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color:'#94a3b8', font:{size:11}, padding:12 } } } } })
+}
+
+// ============================================================
+// PRODUCTS ADMIN
+// ============================================================
+async function loadProductsAdmin() {
+  const { data: prods } = await sb.from('products').select('*').order('category').order('name')
+  S.allProducts = prods || []
+  // update POS product list
+  S.products = (prods||[]).filter(p=>p.is_active)
+  renderProductsAdmin(S.allProducts)
+  const cats = [...new Set((prods||[]).map(p=>p.category).filter(Boolean))].sort()
+  const subs = [...new Set((prods||[]).map(p=>p.subcategory).filter(Boolean))].sort()
+  const brands = [...new Set((prods||[]).map(p=>p.brand).filter(Boolean))].sort()
+  const catList = document.getElementById('cat-list')
+  if (catList) catList.innerHTML = cats.map(c=>`<option value="${esc(c)}">`).join('')
+  const subcatList = document.getElementById('subcat-list')
+  if (subcatList) subcatList.innerHTML = subs.map(c=>`<option value="${esc(c)}">`).join('')
+  const brandList = document.getElementById('brand-list')
+  if (brandList) brandList.innerHTML = brands.map(c=>`<option value="${esc(c)}">`).join('')
+}
+
+function filterProductsAdmin() {
+  const q = (document.getElementById('prod-search')?.value||'').toLowerCase()
+  const filtered = S.allProducts.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
+  renderProductsAdmin(filtered)
+}
+
+function renderProductsAdmin(prods) {
+  const tbody = document.getElementById('products-tbody')
+  if (!prods.length) { tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t3)">No products. Click + Add Product to start.</td></tr>`; return }
+  tbody.innerHTML = prods.map(p => {
+    const margin = p.cost_price>0 ? Math.round((p.retail_price-p.cost_price)/p.retail_price*100) : 0
+    return `<tr>
+      <td style="font-weight:600">${esc(p.name)}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--t3)">${esc(p.sku)}</td>
+      <td><span class="tag tag-acc" style="font-size:9px">${esc(p.category)}</span></td>
+      <td>KSh ${fmt(p.cost_price)}</td>
+      <td>KSh ${fmt(p.retail_price)}</td>
+      <td><span class="tag ${margin>=30?'tag-grn':margin>=15?'tag-yel':'tag-red'}">${margin}%</span></td>
+      <td>${p.warranty_months||0}mo</td>
+      <td><span class="tag ${p.is_active?'tag-grn':'tag-red'}">${p.is_active?'Yes':'No'}</span></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px" onclick="editProduct('${p.id}')">✏️</button>
+        <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px;color:var(--red)" onclick="toggleProduct('${p.id}',${!p.is_active})">${p.is_active?'Deactivate':'Activate'}</button>
+      </td>
+    </tr>`}).join('')
+}
+
+function openAddProduct() {
+  document.getElementById('edit-product-id').value = ''
+  document.getElementById('product-modal-title').textContent = '+ Add Product'
+  ;['p-name','p-sku','p-cat','p-subcat','p-brand','p-cost','p-retail'].forEach(id => { const el=document.getElementById(id); if(el)el.value='' })
+  document.getElementById('p-reorder').value = '5'
+  document.getElementById('p-warranty').value = '0'
+  document.getElementById('p-imei').checked = false
+  document.getElementById('p-bundle').checked = false
+  openModal('add-product-modal')
+}
+
+function editProduct(id) {
+  const p = S.allProducts.find(x=>x.id===id)
+  if (!p) return
+  document.getElementById('edit-product-id').value = id
+  document.getElementById('product-modal-title').textContent = '✏️ Edit Product'
+  document.getElementById('p-name').value = p.name||''
+  document.getElementById('p-sku').value = p.sku||''
+  document.getElementById('p-cat').value = p.category||''
+  document.getElementById('p-subcat').value = p.subcategory||''
+  document.getElementById('p-brand').value = p.brand||''
+  document.getElementById('p-cost').value = p.cost_price||''
+  document.getElementById('p-retail').value = p.retail_price||''
+  document.getElementById('p-reorder').value = p.reorder_point||5
+  document.getElementById('p-warranty').value = p.warranty_months||0
+  document.getElementById('p-imei').checked = p.has_imei||false
+  document.getElementById('p-bundle').checked = p.is_bundle||false
+  openModal('add-product-modal')
+}
+
+async function saveProduct() {
+  const name = document.getElementById('p-name').value.trim()
+  const sku = document.getElementById('p-sku').value.trim().toUpperCase()
+  const cat = document.getElementById('p-cat').value.trim()
+  const subcat = document.getElementById('p-subcat').value.trim()
+  const brand = document.getElementById('p-brand').value.trim()
+  const cost = parseFloat(document.getElementById('p-cost').value)||0
+  const retail = parseFloat(document.getElementById('p-retail').value)||0
+  const reorder = parseInt(document.getElementById('p-reorder').value)||5
+  const warranty = parseInt(document.getElementById('p-warranty').value)||0
+  const hasImei = document.getElementById('p-imei').checked
+  const isBundle = document.getElementById('p-bundle').checked
+  if (!name||!sku||!cat||!retail) { notify('Fill required fields','Name, SKU, Category, Price',false); return }
+  const payload = { name, sku, category:cat, subcategory:subcat||null, brand:brand||null, cost_price:cost, retail_price:retail, reorder_point:reorder, warranty_months:warranty, has_imei:hasImei, is_bundle:isBundle }
+  // Auto-register category/subcategory in lookup table so it shows in Categories screen & pickers
+  sb.from('categories').upsert({ name:cat, subcategory:subcat||null }, { onConflict:'name,subcategory' }).then(()=>{})
+  const editId = document.getElementById('edit-product-id').value
+  if (editId) { await sb.from('products').update(payload).eq('id', editId) }
+  else {
+    const { error } = await sb.from('products').insert({ ...payload, is_active:true })
+    if (error) { notify('❌ Error', error.message, false); return }
+    // Create inventory rows for all branches
+    const { data: newP } = await sb.from('products').select('id').eq('sku', sku).single()
+    if (newP) { await sb.from('inventory').insert(S.branches.map(b=>({ product_id:newP.id, branch_id:b.id, qty:0 }))) }
+  }
+  notify('✅ Product Saved', name)
+  closeModal('add-product-modal')
+  loadProductsAdmin()
+}
+
+async function toggleProduct(id, active) {
+  await sb.from('products').update({ is_active: active }).eq('id', id)
+  notify(active ? '✅ Activated' : '⏹ Deactivated', '')
+  loadProductsAdmin()
+}
+
+// ============================================================
+// SUPPLIERS
+// ============================================================
+let allSuppliers = []
+async function loadSuppliers() {
+  const { data } = await sb.from('suppliers').select('*').order('name')
+  allSuppliers = data || []
+  // populate PO supplier dropdown
+  const poSup = document.getElementById('po-supplier')
+  if (poSup) poSup.innerHTML = (data||[]).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')
+  const tbody = document.getElementById('suppliers-tbody')
+  if (!data?.length) { tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3)">No suppliers yet</td></tr>`; return }
+  tbody.innerHTML = data.map(s=>`<tr>
+    <td style="font-weight:600">${esc(s.name)}</td>
+    <td>${esc(s.contact_person||'—')}</td>
+    <td>${esc(s.phone||'—')}</td>
+    <td>${esc(s.email||'—')}</td>
+    <td>${esc(s.payment_terms||'—')}</td>
+    <td><button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px" onclick="editSupplier('${s.id}')">✏️ Edit</button></td>
+  </tr>`).join('')
+}
+
+function editSupplier(id) {
+  const s = allSuppliers.find(x=>x.id===id)
+  if (!s) return
+  document.getElementById('edit-supplier-id').value = id
+  document.getElementById('supplier-modal-title').textContent = '✏️ Edit Supplier'
+  document.getElementById('sup-name').value = s.name||''
+  document.getElementById('sup-contact').value = s.contact_person||''
+  document.getElementById('sup-phone').value = s.phone||''
+  document.getElementById('sup-email').value = s.email||''
+  document.getElementById('sup-terms').value = s.payment_terms||'Cash on delivery'
+  openModal('add-supplier-modal')
+}
+
+async function saveSupplier() {
+  const name = document.getElementById('sup-name').value.trim()
+  if (!name) { notify('Supplier name required','',false); return }
+  const payload = { name, contact_person: document.getElementById('sup-contact').value.trim()||null, phone: document.getElementById('sup-phone').value.trim()||null, email: document.getElementById('sup-email').value.trim()||null, payment_terms: document.getElementById('sup-terms').value }
+  const editId = document.getElementById('edit-supplier-id').value
+  if (editId) await sb.from('suppliers').update(payload).eq('id', editId)
+  else await sb.from('suppliers').insert(payload)
+  notify('✅ Supplier Saved', name)
+  closeModal('add-supplier-modal')
+  document.getElementById('edit-supplier-id').value = ''
+  loadSuppliers()
+}
+
+// ============================================================
+// PURCHASES
+// ============================================================
+async function loadPurchases() {
+  const { data } = await sb.from('purchases').select(`*,suppliers(name),users!purchases_ordered_by_fkey(name)`).order('ordered_at',{ascending:false}).limit(50)
+  const tbody = document.getElementById('purchases-tbody')
+  if (!data?.length) { tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--t3)">No purchase orders yet</td></tr>`; return }
+  tbody.innerHTML = data.map(p=>`<tr>
+    <td style="font-family:monospace;color:var(--acc)">${esc(p.po_number)}</td>
+    <td>${esc(p.suppliers?.name||'—')}</td>
+    <td style="color:var(--t3)">${fmtDate(p.ordered_at)}</td>
+    <td>—</td>
+    <td style="font-weight:700">KSh ${fmt(p.total_amount)}</td>
+    <td><span class="tag ${p.status==='received'?'tag-grn':p.status==='ordered'?'tag-acc':'tag-yel'}">${p.status}</span></td>
+    <td>${p.status==='ordered'?`<button class="btn btn-grn" style="height:26px;padding:0 8px;font-size:10px" onclick="receivePO('${p.id}')">Mark Received</button>`:'—'}</td>
+  </tr>`).join('')
+}
+
+S.poLines = []
+function addPOLine() {
+  S.poLines.push({ product_id:'', name:'', qty:1, cost:0 })
+  renderPOLines()
+}
+
+function renderPOLines() {
+  const list = document.getElementById('po-items-list')
+  list.innerHTML = S.poLines.map((line, idx)=>`
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center">
+      <input class="input" style="height:32px" placeholder="Product name/SKU" value="${esc(line.name)}" oninput="updatePOLine(${idx},'name',this.value)" list="cat-list">
+      <input class="input" style="height:32px" type="number" placeholder="Qty" value="${line.qty}" oninput="updatePOLine(${idx},'qty',this.value)">
+      <input class="input" style="height:32px" type="number" placeholder="Cost" value="${line.cost||''}" oninput="updatePOLine(${idx},'cost',this.value)">
+      <button onclick="removePOLine(${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px">✕</button>
+    </div>`).join('')
+  const total = S.poLines.reduce((s,l)=>s+(parseFloat(l.cost)||0)*(parseInt(l.qty)||0),0)
+  document.getElementById('po-total').textContent = `KSh ${fmt(total)}`
+}
+
+function updatePOLine(idx, field, val) { S.poLines[idx][field] = val; renderPOLines() }
+function removePOLine(idx) { S.poLines.splice(idx,1); renderPOLines() }
+
+async function savePO() {
+  const suppId = document.getElementById('po-supplier').value
+  const branchId = document.getElementById('po-branch').value
+  if (!suppId||!S.poLines.length) { notify('Select supplier and add items','',false); return }
+  const total = S.poLines.reduce((s,l)=>s+(parseFloat(l.cost)||0)*(parseInt(l.qty)||0),0)
+  const { data: poNum } = await sb.rpc('next_po_number')
+  const { data: po } = await sb.from('purchases').insert({ po_number:poNum, supplier_id:suppId, branch_id:branchId, total_amount:total, status:'ordered', ordered_by:S.user.id, notes:document.getElementById('po-notes').value }).select().single()
+  if (po) {
+    for (const line of S.poLines) {
+      const prod = S.products.find(p=>p.name.toLowerCase().includes((line.name||'').toLowerCase())||p.sku.toLowerCase()===(line.name||'').toLowerCase())
+      if (prod) await sb.from('purchase_items').insert({ purchase_id:po.id, product_id:prod.id, qty_ordered:parseInt(line.qty)||1, unit_cost:parseFloat(line.cost)||0, line_total:(parseFloat(line.cost)||0)*(parseInt(line.qty)||1) })
+    }
+  }
+  notify('✅ PO Created', poNum)
+  closeModal('create-po-modal')
+  S.poLines = []
+  loadPurchases()
+}
+
+async function receivePO(id) {
+  await sb.from('purchases').update({ status:'received', received_by:S.user.id, received_at: new Date() }).eq('id', id)
+  // Get items and add to inventory
+  const { data: items } = await sb.from('purchase_items').select('*,purchases(branch_id)').eq('purchase_id', id)
+  for (const item of (items||[])) {
+    const branchId = item.purchases?.branch_id
+    const { data: inv } = await sb.from('inventory').select('id,qty').eq('product_id',item.product_id).eq('branch_id',branchId).single()
+    if (inv) await sb.from('inventory').update({ qty:inv.qty+item.qty_ordered, updated_at:new Date() }).eq('id',inv.id)
+    else await sb.from('inventory').insert({ product_id:item.product_id, branch_id:branchId, qty:item.qty_ordered })
+  }
+  notify('✅ PO Received','Stock updated')
+  loadPurchases()
+}
+
+// ============================================================
+// STOCK TRANSFERS
+// ============================================================
+async function loadTransfers() {
+  const { data } = await sb.from('stock_transfers').select(`*,products(name,sku),branches!stock_transfers_from_branch_id_fkey(name),to_branch:branches!stock_transfers_to_branch_id_fkey(name),users!stock_transfers_initiated_by_fkey(name)`).order('created_at',{ascending:false}).limit(50)
+  const tbody = document.getElementById('transfers-tbody')
+  if (!data?.length) { tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--t3)">No transfers yet</td></tr>`; return }
+  tbody.innerHTML = data.map(t=>`<tr>
+    <td style="font-family:monospace;color:var(--acc)">${esc(t.ibt_number)}</td>
+    <td style="font-size:11px">${esc(t.branches?.name?.replace('ELTEK — ','')||'—')}</td>
+    <td style="font-size:11px">${esc(t.to_branch?.name?.replace('ELTEK — ','')||'—')}</td>
+    <td>${esc(t.products?.name||'—')}</td>
+    <td style="font-weight:700">${t.qty}</td>
+    <td><span class="tag ${t.status==='received'?'tag-grn':t.status==='in_transit'?'tag-yel':'tag-acc'}">${t.status}</span></td>
+    <td>${t.status==='in_transit'?`<button class="btn btn-grn" style="height:26px;padding:0 8px;font-size:10px" onclick="receiveTransfer('${t.id}','${t.product_id}','${t.to_branch_id}',${t.qty})">Mark Received</button>`:'—'}</td>
+  </tr>`).join('')
+}
+
+async function saveTransfer() {
+  const productId = document.getElementById('tr-product-id').value
+  const fromId = document.getElementById('tr-from').value
+  const toId = document.getElementById('tr-to').value
+  const qty = parseInt(document.getElementById('tr-qty').value)||0
+  const notes = document.getElementById('tr-notes').value
+  if (!productId||!fromId||!toId||!qty||fromId===toId) { notify('Fill all fields (branches must differ)','',false); return }
+  const { data: ibtNum } = await sb.rpc('next_ibt_number')
+  await sb.from('stock_transfers').insert({ ibt_number:ibtNum, from_branch_id:fromId, to_branch_id:toId, product_id:productId, qty, status:'in_transit', initiated_by:S.user.id, dispatched_at:new Date(), notes:notes||null })
+  // Deduct from source
+  const { data: inv } = await sb.from('inventory').select('id,qty').eq('product_id',productId).eq('branch_id',fromId).single()
+  if (inv) await sb.from('inventory').update({ qty:Math.max(0,inv.qty-qty) }).eq('id',inv.id)
+  notify('✅ Transfer Created', ibtNum)
+  closeModal('create-transfer-modal')
+  document.getElementById('tr-product-search').value=''
+  document.getElementById('tr-product-id').value=''
+  document.getElementById('tr-qty').value=''
+  loadTransfers()
+}
+
+async function receiveTransfer(id, productId, toBranchId, qty) {
+  await sb.from('stock_transfers').update({ status:'received', received_by:S.user.id, received_at:new Date() }).eq('id',id)
+  const { data: inv } = await sb.from('inventory').select('id,qty').eq('product_id',productId).eq('branch_id',toBranchId).single()
+  if (inv) await sb.from('inventory').update({ qty:inv.qty+qty }).eq('id',inv.id)
+  else await sb.from('inventory').insert({ product_id:productId, branch_id:toBranchId, qty })
+  notify('✅ Transfer Received','Stock updated')
+  loadTransfers()
+}
+
+// ============================================================
+// USERS
+// ============================================================
+let allUsers = []
+async function loadUsers() {
+  const { data } = await sb.from('users').select(`*,branches(name)`).order('name')
+  allUsers = data || []
+  const tbody = document.getElementById('users-tbody')
+  tbody.innerHTML = data.map(u=>`<tr>
+    <td style="font-weight:600">${esc(u.name)}</td>
+    <td><div class="cav" style="display:inline-flex">${esc(u.initials||'?')}</div></td>
+    <td><span class="tag ${u.role==='admin'?'tag-pur':u.role==='supervisor'?'tag-yel':'tag-acc'}">${u.role}</span></td>
+    <td style="font-size:11px;color:var(--t3)">${esc(u.branches?.name?.replace('ELTEK — ','')||'All')}</td>
+    <td style="font-family:monospace;color:var(--t3)">••••</td>
+    <td><span class="tag ${u.is_active?'tag-grn':'tag-red'}">${u.is_active?'Active':'Inactive'}</span></td>
+    <td style="display:flex;gap:4px">
+      <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px" onclick="editUser('${u.id}')">✏️</button>
+      <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px;color:var(--red)" onclick="toggleUser('${u.id}',${!u.is_active})">${u.is_active?'Deactivate':'Activate'}</button>
+    </td>
+  </tr>`).join('')
+  // populate branch select in add-user modal
+  const ubr = document.getElementById('u-branch')
+  if (ubr) ubr.innerHTML = '<option value="">All Branches</option>' + S.branches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('')
+}
+
+function editUser(id) {
+  const u = allUsers.find(x=>x.id===id)
+  if (!u) return
+  document.getElementById('edit-user-id').value = id
+  document.getElementById('user-modal-title').textContent = '✏️ Edit User'
+  document.getElementById('u-name').value = u.name||''
+  document.getElementById('u-initials').value = u.initials||''
+  document.getElementById('u-pin').value = u.pin||''
+  document.getElementById('u-role').value = u.role||'cashier'
+  document.getElementById('u-branch').value = u.branch_id||''
+  openModal('add-user-modal')
+}
+
+async function saveUser() {
+  const name = document.getElementById('u-name').value.trim()
+  const initials = document.getElementById('u-initials').value.trim().toUpperCase()
+  const pin = document.getElementById('u-pin').value.trim()
+  const role = document.getElementById('u-role').value
+  const branchId = document.getElementById('u-branch').value||null
+  if (!name||!initials||!pin||pin.length<4) { notify('Fill all fields. PIN must be 4 digits','',false); return }
+  const payload = { name, initials, pin, role, branch_id:branchId, is_active:true }
+  const editId = document.getElementById('edit-user-id').value
+  if (editId) await sb.from('users').update(payload).eq('id',editId)
+  else await sb.from('users').insert(payload)
+  notify('✅ User Saved', name)
+  closeModal('add-user-modal')
+  document.getElementById('edit-user-id').value=''
+  loadUsers()
+}
+
+async function toggleUser(id, active) {
+  await sb.from('users').update({ is_active:active }).eq('id',id)
+  notify(active?'✅ Activated':'⏹ Deactivated','')
+  loadUsers()
+}
+
+// ============================================================
+// RETURNS
+// ============================================================
+S.returnSale = null; S.returnCondition = 'full'
+
+async function loadReturnsLog() {
+  const { data } = await sb.from('returns').select(`*,sales(invoice_number),users(name)`).eq('branch_id', S.branch.id).order('created_at',{ascending:false}).limit(20)
+  const list = document.getElementById('returns-log-list')
+  if (!data?.length) { list.innerHTML=`<div class="empty-state"><div class="es-icon">↩️</div><div class="es-text">No returns yet</div></div>`; return }
+  list.innerHTML = data.map(r=>`
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:9px 12px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-weight:600;font-size:12px">${esc(r.credit_note_number)}</span><span style="font-weight:700;color:var(--red)">−KSh ${fmt(r.total_refund)}</span></div>
+      <div style="font-size:10px;color:var(--t3)">Original: ${esc(r.sales?.invoice_number||'—')} · ${r.refund_method} · ${fmtDate(r.created_at)}</div>
+    </div>`).join('')
+}
+
+async function lookupReturn() {
+  const invNum = document.getElementById('return-inv-input').value.trim().toUpperCase()
+  if (!invNum) { notify('Enter invoice number','',false); return }
+  const { data: sale } = await sb.from('sales').select(`*,customers(name,phone),sale_items(id,qty,line_total,unit_price,products(name,sku))`).eq('invoice_number', invNum).eq('branch_id', S.branch.id).single()
+  if (!sale) { notify('Invoice not found', invNum, false); return }
+  if (sale.status === 'voided') { notify('Invoice already voided','', false); return }
+  S.returnSale = sale
+  const res = document.getElementById('return-result')
+  res.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:12px">
+      <div style="font-weight:600;margin-bottom:8px">${esc(invNum)} · ${esc(sale.customers?.name||'Walk-in')} · ${fmtDate(sale.created_at)}</div>
+      ${(sale.sale_items||[]).map(i=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:7px;background:var(--s3);border-radius:6px;cursor:pointer;margin-bottom:4px">
+          <input type="checkbox" class="return-item-cb" data-id="${i.id}" data-amt="${i.line_total}" style="width:16px;height:16px">
+          <span style="flex:1;font-size:12px">${esc(i.products?.name||'?')} ×${i.qty}</span>
+          <span style="font-weight:700">KSh ${fmt(i.line_total)}</span>
+        </label>`).join('')}
+    </div>`
+}
+
+function selCond(cond) {
+  S.returnCondition = cond
+  ;['full','partial','deny'].forEach(c => {
+    const el = document.getElementById('cond-'+c)
+    if (el) { el.style.borderColor='var(--b1)'; el.style.background='var(--s2)' }
+  })
+  const sel = document.getElementById('cond-'+cond)
+  if (sel) { sel.style.borderColor = cond==='full'?'var(--grn)':cond==='partial'?'var(--yel)':'var(--red)'; sel.style.background = cond==='full'?'rgba(16,185,129,.1)':cond==='partial'?'rgba(245,158,11,.1)':'rgba(239,68,68,.1)' }
+}
+
+async function processReturn() {
+  if (!S.returnSale) { notify('Lookup an invoice first','',false); return }
+  if (S.returnCondition === 'deny') { notify('Return denied','Item condition not eligible',false); return }
+  const checked = [...document.querySelectorAll('.return-item-cb:checked')]
+  if (!checked.length) { notify('Select items to return','',false); return }
+  const method = document.querySelector('input[name="refund-type"]:checked')?.value || 'store_credit'
+  let refundAmt = checked.reduce((s,cb)=>s+parseFloat(cb.dataset.amt||0),0)
+  if (S.returnCondition === 'partial') refundAmt = Math.round(refundAmt * 0.7)
+  const { data: cnNum } = await sb.rpc('next_credit_note_number')
+  await sb.from('returns').insert({ credit_note_number:cnNum, original_sale_id:S.returnSale.id, branch_id:S.branch.id, processed_by:S.user.id, total_refund:refundAmt, refund_method:method, condition:S.returnCondition })
+  if (method==='store_credit' && S.returnSale.customer_id) {
+    const pts = Math.floor(refundAmt / 10)
+    await sb.from('customers').update({ loyalty_points: sb.rpc('coalesce_add_pts', { p_id:S.returnSale.customer_id, p_pts:pts }) }).eq('id', S.returnSale.customer_id)
+  }
+  notify('✅ Return Processed', `${cnNum} · KSh ${fmt(refundAmt)} ${method}`)
+  S.returnSale = null
+  document.getElementById('return-result').innerHTML = ''
+  document.getElementById('return-inv-input').value = ''
+  loadReturnsLog()
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+async function loadSettings() {
+  const list = document.getElementById('branches-settings-list')
+  list.innerHTML = S.branches.map(b=>`
+    <div style="display:flex;align-items:center;gap:8px">
+      <input class="input" id="br-edit-${b.id}" value="${esc(b.name)}" style="flex:1;height:32px">
+      <button class="btn btn-ghost" style="height:32px;padding:0 10px;font-size:11px" onclick="saveBranchName('${b.id}')">Save</button>
+    </div>`).join('')
+}
+
+async function saveBranchName(id) {
+  const el = document.getElementById('br-edit-'+id)
+  if (!el) return
+  await sb.from('branches').update({ name: el.value.trim() }).eq('id', id)
+  const { data: branches } = await sb.from('branches').select('*').eq('is_active',true).order('name')
+  S.branches = branches || []
+  populateBranchSelects()
+  notify('✅ Branch Updated','')
+}
+
+async function saveSettings() {
+  notify('✅ Settings Saved','')
+}
+
+async function saveBranch() {
+  const name = document.getElementById('br-name').value.trim()
+  const loc = document.getElementById('br-location').value.trim()
+  if (!name) { notify('Branch name required','',false); return }
+  await sb.from('branches').insert({ name, location:loc||null, is_active:true })
+  // Create wallet rows for new branch
+  const { data: newBr } = await sb.from('branches').select('id').eq('name',name).single()
+  if (newBr) {
+    const walletDefs = [['restock',35,true],['profit',20,false],['opex',15,false],['emergency',10,false],['growth',20,false]]
+    await sb.from('budget_wallets').insert(walletDefs.map(([n,p,l])=>({ branch_id:newBr.id, name:n, allocation_pct:p, balance:0, is_locked:l })))
+    await sb.from('inventory').insert((S.allProducts||[]).map(p=>({ product_id:p.id, branch_id:newBr.id, qty:0 })))
+  }
+  const { data: branches } = await sb.from('branches').select('*').eq('is_active',true).order('name')
+  S.branches = branches || []
+  populateBranchSelects()
+  notify('✅ Branch Added', name)
+  closeModal('add-branch-modal')
+  document.getElementById('br-name').value=''
+  document.getElementById('br-location').value=''
+  loadSettings()
+}
+
+// ============================================================
+// PROFIT ANALYTICS
+// ============================================================
+async function loadProfit() {
+  const days = parseInt(document.getElementById('profit-period')?.value||30)
+  const from = new Date(); from.setDate(from.getDate() - days); from.setHours(0,0,0,0)
+  const { data: sales } = await sb.from('sales').select(`id,total,created_at,sale_items(qty,line_total,unit_price,cost_price,discount,product_id,products(name,category,subcategory,brand))`).eq('branch_id', S.branch.id).eq('status','paid').gte('created_at', from.toISOString())
+  const items = (sales||[]).flatMap(s => (s.sale_items||[]).map(i => ({...i, sale_total:s.total})))
+
+  // Build hierarchy: category -> subcategory -> product
+  const tree = {}
+  items.forEach(i => {
+    const p = i.products || {}
+    const cat = p.category || 'Uncategorized'
+    const sub = p.subcategory || '—'
+    const prod = p.name || 'Unknown'
+    tree[cat] = tree[cat] || { units:0, revenue:0, cogs:0, subs:{} }
+    tree[cat].subs[sub] = tree[cat].subs[sub] || { units:0, revenue:0, cogs:0, prods:{} }
+    tree[cat].subs[sub].prods[prod] = tree[cat].subs[sub].prods[prod] || { units:0, revenue:0, cogs:0 }
+    const rev = parseFloat(i.line_total||0)
+    const cost = parseFloat(i.cost_price||0) * i.qty
+    ;[tree[cat], tree[cat].subs[sub], tree[cat].subs[sub].prods[prod]].forEach(node => {
+      node.units += i.qty; node.revenue += rev; node.cogs += cost
+    })
+  })
+
+  const totalRevenue = items.reduce((s,i)=>s+parseFloat(i.line_total||0),0)
+  const totalCogs = items.reduce((s,i)=>s+parseFloat(i.cost_price||0)*i.qty,0)
+  const grossProfit = totalRevenue - totalCogs
+  const margin = totalRevenue ? Math.round(grossProfit/totalRevenue*100) : 0
+
+  // Operating expenses for the same period (for net profit)
+  const fromDate = from.toISOString().slice(0,10)
+  const { data: exps } = await sb.from('expenses').select('amount,category,type').eq('branch_id', S.branch.id).gte('expense_date', fromDate)
+  const totalExpenses = (exps||[]).reduce((s,e)=>s+parseFloat(e.amount||0),0)
+  const netProfit = grossProfit - totalExpenses
+  const netMargin = totalRevenue ? Math.round(netProfit/totalRevenue*100) : 0
+
+  document.getElementById('profit-kpis').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-val" style="color:var(--grn)">KSh ${fmt(Math.round(totalRevenue))}</div><div class="stat-sub">${items.length} line items</div></div>
+    <div class="stat-card"><div class="stat-label">COGS</div><div class="stat-val" style="color:var(--red)">KSh ${fmt(Math.round(totalCogs))}</div></div>
+    <div class="stat-card"><div class="stat-label">Gross Profit</div><div class="stat-val" style="color:var(--acc)">KSh ${fmt(Math.round(grossProfit))}</div><div class="stat-sub">${margin}% gross margin</div></div>
+    <div class="stat-card"><div class="stat-label">Net Profit</div><div class="stat-val" style="color:${netProfit>=0?'var(--grn)':'var(--red)'}">KSh ${fmt(Math.round(netProfit))}</div><div class="stat-sub">${netMargin}% after KSh ${fmt(Math.round(totalExpenses))} expenses</div></div>`
+
+  // Charts: gross profit & margin % per category
+  const cats = Object.keys(tree).sort((a,b)=>tree[b].revenue-tree[a].revenue)
+  const catProfits = cats.map(c => Math.round(tree[c].revenue - tree[c].cogs))
+  const catMargins = cats.map(c => tree[c].revenue ? Math.round((tree[c].revenue-tree[c].cogs)/tree[c].revenue*100) : 0)
+  renderBarChart('profitCatChart', cats, catProfits, 'Gross Profit (KSh)', '#8b5cf6')
+  renderBarChart('profitMarginChart', cats, catMargins, 'Margin %', '#10b981')
+
+  // Best / worst margin products (need at least 1 unit sold)
+  const flatProds = []
+  cats.forEach(c => Object.keys(tree[c].subs).forEach(s => Object.entries(tree[c].subs[s].prods).forEach(([name, d]) => {
+    const m = d.revenue ? Math.round((d.revenue-d.cogs)/d.revenue*100) : 0
+    flatProds.push({ name, cat:c, sub:s, margin:m, revenue:d.revenue, units:d.units })
+  })))
+  const sorted = [...flatProds].sort((a,b)=>b.margin-a.margin)
+  const renderRankList = (arr) => arr.slice(0,6).map(p => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="flex:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)} <span style="color:var(--t3);font-size:10px">· ${esc(p.cat)}</span></div>
+      <span class="tag ${p.margin>=30?'tag-grn':p.margin>=15?'tag-yel':'tag-red'}">${p.margin}%</span>
+      <span style="font-size:11px;font-weight:700;width:80px;text-align:right">KSh ${fmt(Math.round(p.revenue))}</span>
+    </div>`).join('') || `<div style="text-align:center;color:var(--t3);padding:16px;font-size:12px">No sales in this period</div>`
+  document.getElementById('profit-best').innerHTML = renderRankList(sorted)
+  document.getElementById('profit-worst').innerHTML = renderRankList([...sorted].reverse())
+
+  // Hierarchical table
+  S.profitTree = tree
+  renderProfitTable(tree)
+
+  // Net profit detail card
+  const expByCat = {}
+  ;(exps||[]).forEach(e => { expByCat[e.category]=(expByCat[e.category]||0)+parseFloat(e.amount||0) })
+  document.getElementById('profit-net').innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start">
+      <div style="flex:1;min-width:220px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--b1)"><span>Gross Profit</span><strong style="color:var(--acc)">KSh ${fmt(Math.round(grossProfit))}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--b1)"><span>– Operating Expenses</span><strong style="color:var(--red)">KSh ${fmt(Math.round(totalExpenses))}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;font-weight:800"><span>= Net Profit</span><span style="color:${netProfit>=0?'var(--grn)':'var(--red)'}">KSh ${fmt(Math.round(netProfit))}</span></div>
+      </div>
+      <div style="flex:1;min-width:220px">
+        <div class="sec-label" style="margin-bottom:6px">Expenses by category</div>
+        ${Object.keys(expByCat).length ? Object.entries(expByCat).sort((a,b)=>b[1]-a[1]).map(([c,a])=>`
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>${esc(c)}</span><span>KSh ${fmt(Math.round(a))}</span></div>`).join('')
+          : `<div style="font-size:12px;color:var(--t3)">No expenses logged this period</div>`}
+      </div>
+    </div>`
+}
+
+function renderProfitTable(tree) {
+  const cats = Object.keys(tree).sort((a,b)=>tree[b].revenue-tree[a].revenue)
+  if (!cats.length) { document.getElementById('profit-tbody').innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--t3)">No sales in this period yet</td></tr>`; return }
+  let rows = ''
+  cats.forEach((cat, ci) => {
+    const c = tree[cat]
+    const cm = c.revenue ? Math.round((c.revenue-c.cogs)/c.revenue*100) : 0
+    const catId = `pc-${ci}`
+    rows += `<tr style="cursor:pointer;background:var(--s1)" onclick="toggleProfitRow('${catId}')">
+      <td><span id="${catId}-arrow">▸</span></td>
+      <td style="font-weight:800">📁 ${esc(cat)}</td>
+      <td style="text-align:right">${c.units}</td>
+      <td style="text-align:right">KSh ${fmt(Math.round(c.revenue))}</td>
+      <td style="text-align:right">KSh ${fmt(Math.round(c.cogs))}</td>
+      <td style="text-align:right;font-weight:700">KSh ${fmt(Math.round(c.revenue-c.cogs))}</td>
+      <td style="text-align:right"><span class="tag ${cm>=30?'tag-grn':cm>=15?'tag-yel':'tag-red'}">${cm}%</span></td>
+    </tr>`
+    const subs = Object.keys(c.subs).sort((a,b)=>c.subs[b].revenue-c.subs[a].revenue)
+    subs.forEach((sub, si) => {
+      const s = c.subs[sub]
+      const sm = s.revenue ? Math.round((s.revenue-s.cogs)/s.revenue*100) : 0
+      const subId = `${catId}-${si}`
+      rows += `<tr class="${catId}-row" style="display:none;cursor:pointer" onclick="toggleProfitRow('${subId}')">
+        <td><span id="${subId}-arrow">▸</span></td>
+        <td style="padding-left:28px">📂 ${esc(sub)}</td>
+        <td style="text-align:right">${s.units}</td>
+        <td style="text-align:right">KSh ${fmt(Math.round(s.revenue))}</td>
+        <td style="text-align:right">KSh ${fmt(Math.round(s.cogs))}</td>
+        <td style="text-align:right;font-weight:700">KSh ${fmt(Math.round(s.revenue-s.cogs))}</td>
+        <td style="text-align:right"><span class="tag ${sm>=30?'tag-grn':sm>=15?'tag-yel':'tag-red'}">${sm}%</span></td>
+      </tr>`
+      Object.entries(s.prods).sort((a,b)=>b[1].revenue-a[1].revenue).forEach(([pname, d]) => {
+        const pm = d.revenue ? Math.round((d.revenue-d.cogs)/d.revenue*100) : 0
+        rows += `<tr class="${subId}-row ${catId}-row" style="display:none">
+          <td></td>
+          <td style="padding-left:50px;color:var(--t2);font-size:12px">📄 ${esc(pname)}</td>
+          <td style="text-align:right;font-size:12px">${d.units}</td>
+          <td style="text-align:right;font-size:12px">KSh ${fmt(Math.round(d.revenue))}</td>
+          <td style="text-align:right;font-size:12px">KSh ${fmt(Math.round(d.cogs))}</td>
+          <td style="text-align:right;font-size:12px">KSh ${fmt(Math.round(d.revenue-d.cogs))}</td>
+          <td style="text-align:right"><span class="tag ${pm>=30?'tag-grn':pm>=15?'tag-yel':'tag-red'}" style="font-size:9px">${pm}%</span></td>
+        </tr>`
+      })
+    })
+  })
+  document.getElementById('profit-tbody').innerHTML = rows
+}
+
+function toggleProfitRow(id) {
+  const arrow = document.getElementById(id+'-arrow')
+  const rows = document.querySelectorAll('.'+id+'-row')
+  const opening = arrow.textContent === '▸'
+  arrow.textContent = opening ? '▾' : '▸'
+  rows.forEach(r => {
+    // Only directly toggle this level's rows; nested levels stay collapsed when re-opening
+    if (r.classList.length === 1 || r.classList[0] === id+'-row') {
+      r.style.display = opening ? '' : 'none'
+    }
+    if (!opening) {
+      r.style.display = 'none'
+      const nestedArrow = r.querySelector(`[id$="-arrow"]`)
+      if (nestedArrow) nestedArrow.textContent = '▸'
+    }
+  })
+}
+
+function renderBarChart(id, labels, data, label, color) {
+  const ctx = document.getElementById(id)
+  if (!ctx) return
+  if (S.charts[id]) S.charts[id].destroy()
+  S.charts[id] = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ label, data, backgroundColor:color+'cc', borderRadius:4 }] }, options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false},ticks:{color:'#64748b',font:{size:10}}}, y:{grid:{color:'#1e2d4530'},ticks:{color:'#64748b',font:{size:10}}} } } })
+}
+
+function exportProfitCSV() {
+  const tree = S.profitTree || {}
+  let csv = 'Category,Subcategory,Product,Units,Revenue,COGS,Gross Profit,Margin %\n'
+  Object.entries(tree).forEach(([cat,c]) => {
+    Object.entries(c.subs).forEach(([sub,s]) => {
+      Object.entries(s.prods).forEach(([prod,d]) => {
+        const m = d.revenue ? Math.round((d.revenue-d.cogs)/d.revenue*100) : 0
+        csv += `"${cat}","${sub}","${prod}",${d.units},${Math.round(d.revenue)},${Math.round(d.cogs)},${Math.round(d.revenue-d.cogs)},${m}\n`
+      })
+    })
+  })
+  const blob = new Blob([csv], {type:'text/csv'})
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `eltek-profit-${new Date().toISOString().slice(0,10)}.csv`
+  a.click()
+  notify('✅ Exported', 'Profit breakdown downloaded as CSV')
+}
+
+// ============================================================
+// CATEGORIES & BRANDS
+// ============================================================
+async function loadCategories() {
+  const { data: cats } = await sb.from('categories').select('*').order('name')
+  const { data: prods } = await sb.from('products').select('id,name,category,subcategory,brand,cost_price,retail_price,is_active')
+  S.allCategories = cats || []
+  const allProds = prods || []
+
+  // Inventory value per product (qty * cost) for this branch
+  const { data: inv } = await sb.from('inventory').select('product_id,qty').eq('branch_id', S.branch.id)
+  const qtyByProd = {}
+  ;(inv||[]).forEach(i => { qtyByProd[i.product_id] = (qtyByProd[i.product_id]||0) + i.qty })
+
+  // Group products by category
+  const byCat = {}
+  allProds.forEach(p => {
+    const cat = p.category || 'Uncategorized'
+    byCat[cat] = byCat[cat] || { products:[], subs:new Set() }
+    byCat[cat].products.push(p)
+    if (p.subcategory) byCat[cat].subs.add(p.subcategory)
+  })
+  // Make sure pre-created empty categories show too
+  ;(cats||[]).forEach(c => { byCat[c.name] = byCat[c.name] || { products:[], subs:new Set() }; if (c.subcategory) byCat[c.name].subs.add(c.subcategory) })
+
+  const catNames = Object.keys(byCat).sort()
+  const totalCats = catNames.length
+  const totalSubs = new Set(allProds.filter(p=>p.subcategory).map(p=>p.category+'|'+p.subcategory)).size
+  const totalBrands = new Set(allProds.filter(p=>p.brand).map(p=>p.brand)).size
+  const stockValue = allProds.reduce((s,p) => s + (qtyByProd[p.id]||0) * parseFloat(p.cost_price||0), 0)
+
+  document.getElementById('categories-kpis').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Categories</div><div class="stat-val" style="color:var(--acc)">${totalCats}</div></div>
+    <div class="stat-card"><div class="stat-label">Subcategories</div><div class="stat-val" style="color:var(--pur)">${totalSubs}</div></div>
+    <div class="stat-card"><div class="stat-label">Brands</div><div class="stat-val" style="color:var(--grn)">${totalBrands}</div></div>
+    <div class="stat-card"><div class="stat-label">Stock Value (this branch)</div><div class="stat-val">KSh ${fmt(Math.round(stockValue))}</div></div>`
+
+  document.getElementById('categories-list').innerHTML = catNames.map(cat => {
+    const grp = byCat[cat]
+    const n = grp.products.length
+    const active = grp.products.filter(p=>p.is_active).length
+    const value = grp.products.reduce((s,p)=>s+(qtyByProd[p.id]||0)*parseFloat(p.cost_price||0),0)
+    const avgMargin = n ? Math.round(grp.products.reduce((s,p)=> s + (p.cost_price>0 ? (p.retail_price-p.cost_price)/p.retail_price*100 : 0),0)/n) : 0
+    const subsList = [...grp.subs]
+    return `<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-weight:800;font-size:14px">📁 ${esc(cat)}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">${n} product${n!==1?'s':''} · ${active} active${subsList.length?` · ${subsList.length} subcategor${subsList.length===1?'y':'ies'}`:''}</div>
+        </div>
+        <div style="display:flex;gap:18px;text-align:right">
+          <div><div class="stat-label">Stock Value</div><div style="font-weight:700;font-size:13px">KSh ${fmt(Math.round(value))}</div></div>
+          <div><div class="stat-label">Avg Margin</div><span class="tag ${avgMargin>=30?'tag-grn':avgMargin>=15?'tag-yel':'tag-red'}">${avgMargin}%</span></div>
+        </div>
+      </div>
+      ${subsList.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${subsList.map(s=>`<span class="tag tag-acc" style="font-size:10px">${esc(s)}</span>`).join('')}</div>` : ''}
+    </div>`
+  }).join('') || `<div style="text-align:center;color:var(--t3);padding:30px">No categories yet — add a product or click + New Category</div>`
+
+  const brands = [...new Set(allProds.filter(p=>p.brand).map(p=>p.brand))].sort()
+  document.getElementById('brands-list').innerHTML = brands.length ? brands.map(b => {
+    const count = allProds.filter(p=>p.brand===b).length
+    return `<span class="tag tag-acc" style="font-size:11px">🔖 ${esc(b)} <span style="opacity:.6">(${count})</span></span>`
+  }).join('') : `<div style="font-size:12px;color:var(--t3)">No brands set on products yet</div>`
+
+  // refresh datalist used in product form
+  const catList = document.getElementById('cat-list')
+  if (catList) catList.innerHTML = catNames.map(c=>`<option value="${esc(c)}">`).join('')
+}
+
+function openAddCategory() {
+  document.getElementById('cat-new-name').value = ''
+  document.getElementById('cat-new-sub').value = ''
+  openModal('add-category-modal')
+}
+
+async function saveNewCategory() {
+  const name = document.getElementById('cat-new-name').value.trim()
+  const sub = document.getElementById('cat-new-sub').value.trim()
+  if (!name) { notify('Category name required','',false); return }
+  const { error } = await sb.from('categories').insert({ name, subcategory: sub||null })
+  if (error && !error.message.includes('duplicate')) { notify('❌ Error', error.message, false); return }
+  notify('✅ Category Saved', sub ? `${name} → ${sub}` : name)
+  closeModal('add-category-modal')
+  loadCategories()
+}
+
+// Init selPayMethod on load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => selPayMethod('cash'), 100)
+})
+</script>
+</body>
+</html>
