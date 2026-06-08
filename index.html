@@ -141,18 +141,10 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <div class="login-sub">OmniPOS · SplitBudget Enterprise</div>
     <div class="sec-label" style="text-align:left;margin-bottom:6px">Select Branch</div>
     <select class="login-select" id="branch-sel"></select>
-    <div class="sec-label" style="text-align:left;margin-bottom:6px">Cashier PIN</div>
-    <div class="pin-display" id="login-pin-disp">_ _ _ _</div>
-    <div class="pin-grid">
-      <button class="pk" onclick="lpin('1')">1</button><button class="pk" onclick="lpin('2')">2</button><button class="pk" onclick="lpin('3')">3</button>
-      <button class="pk" onclick="lpin('4')">4</button><button class="pk" onclick="lpin('5')">5</button><button class="pk" onclick="lpin('6')">6</button>
-      <button class="pk" onclick="lpin('7')">7</button><button class="pk" onclick="lpin('8')">8</button><button class="pk" onclick="lpin('9')">9</button>
-      <button class="pk red" onclick="lpin('c')">CLR</button><button class="pk" onclick="lpin('0')">0</button><button class="pk grn" onclick="lpin('ok')">OK</button>
-    </div>
-    <div class="sec-label" style="text-align:left;margin-bottom:6px">Opening Float (KSh)</div>
-    <div class="float-row"><span style="color:var(--t3)">KSh</span><input class="float-input" id="float-input" placeholder="5000" type="number" value="5000"></div>
-    <button class="btn-login" id="login-btn" onclick="doLogin()">🔓 Begin Shift</button>
-    <div style="font-size:10px;color:var(--t3);margin-top:10px">Default PINs: Cashiers=1234 · Admin=9999</div>
+    <div class="sec-label" style="text-align:left;margin-bottom:6px">Who's working?</div>
+    <select class="login-select" id="login-user-sel" style="margin-bottom:18px"></select>
+    <button class="btn-login" id="login-btn" onclick="doLogin()">🔓 Start Selling</button>
+    <div style="font-size:10px;color:var(--t3);margin-top:10px">Select your name and branch, then tap Start Selling</div>
   </div>
 </div>
 
@@ -162,13 +154,12 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   <div class="topbar">
     <div class="tb-logo">ELTEK OmniPOS</div>
     <div class="tb-pill">Branch: <span id="tb-branch">—</span></div>
-    <div class="tb-pill">Shift: <span id="tb-shift">#—</span></div>
     <div class="tb-status"><div class="tb-dot dot-g"></div><span style="color:var(--grn);font-weight:600">Live</span></div>
     <div class="tb-sp"></div>
-    <span class="shift-badge" id="shift-badge">SHIFT OPEN</span>
-    <div class="tb-cashier" id="tb-cashier-info">
+    <div class="tb-cashier" id="tb-cashier-info" title="Click to switch / log out" style="cursor:pointer" onclick="logout()">
       <div class="cav" id="tb-initials">—</div>
       <div><div style="font-weight:600;font-size:11px" id="tb-name">—</div><div style="color:var(--t3);font-size:10px" id="tb-role">—</div></div>
+      <span style="font-size:10px;color:var(--t3);margin-left:6px">⏻ Switch</span>
     </div>
     <div class="tb-time" id="clock">--:--:--</div>
   </div>
@@ -183,7 +174,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <div class="nav-sep"></div>
     <button class="nav-btn" id="nav-budget" onclick="gotoScreen('budget')"><span class="nav-icon">💰</span>Budget</button>
     <button class="nav-btn" id="nav-expenses" onclick="gotoScreen('expenses')"><span class="nav-icon">💵</span>Expenses</button>
-    <button class="nav-btn" id="nav-shifts" onclick="gotoScreen('shifts')"><span class="nav-icon">🕐</span>Shifts</button>
     <button class="nav-btn" id="nav-analytics" onclick="gotoScreen('analytics')"><span class="nav-icon">📊</span>Reports</button>
     <button class="nav-btn nav-admin" id="nav-profit" onclick="adminGate('profit')" style="border:1px solid rgba(139,92,246,.3)"><span class="nav-icon">💹</span>Profit</button>
     <div class="nav-sep"></div>
@@ -435,23 +425,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   </div>
 </div>
 
-<!-- ====== SCREEN: SHIFTS ====== -->
-<div class="screen" id="screen-shifts">
-  <div class="page-header">
-    <div><div class="page-title">🕐 Shifts</div><div class="page-subtitle">Cash reconciliation · Audit trail</div></div>
-    <div class="page-actions">
-      <button class="btn btn-red" onclick="openModal('close-shift-modal')">🔒 Close Shift</button>
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden">
-    <div class="scroll" style="padding:16px;border-right:1px solid var(--b1)" id="shift-active-panel"></div>
-    <div class="scroll" style="padding:16px">
-      <div class="sec-label">All Shifts Today</div>
-      <div id="shifts-list" style="display:flex;flex-direction:column;gap:8px"></div>
-    </div>
-  </div>
-</div>
-
 <!-- ====== SCREEN: ANALYTICS ====== -->
 <div class="screen" id="screen-analytics">
   <div class="page-header">
@@ -473,6 +446,13 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <div class="g2">
       <div class="card"><div class="sec-label">Top Products by Revenue</div><div id="top-products-chart"></div></div>
       <div class="card"><div class="sec-label">Sales by Cashier</div><div id="cashier-chart"></div></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="sec-label" style="margin:0">Today's Sales Summary — by Attendant</div>
+        <span style="font-size:10px;color:var(--t3)" id="attendant-summary-date"></span>
+      </div>
+      <div id="attendant-summary"></div>
     </div>
   </div>
 </div>
@@ -693,20 +673,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   </div>
 </div>
 
-<!-- CLOSE SHIFT -->
-<div class="modal-bg" id="close-shift-modal">
-  <div class="modal">
-    <div class="modal-hd"><span class="modal-title">🔒 Close Shift</span><button class="modal-x" onclick="closeModal('close-shift-modal')">✕</button></div>
-    <div class="modal-body">
-      <div id="close-shift-summary" style="margin-bottom:14px"></div>
-      <div class="form-row"><label class="form-label">Actual Cash in Drawer (KSh)</label><input class="input" id="closing-float" type="number" placeholder="0" oninput="calcVariance()"></div>
-      <div id="variance-display" style="margin-bottom:12px;font-size:13px;font-weight:700"></div>
-      <div class="form-row"><label class="form-label">Notes</label><textarea class="input" id="closing-notes" rows="2" placeholder="Any notes for this shift…" style="resize:none"></textarea></div>
-      <button class="btn btn-red" style="width:100%;justify-content:center;height:42px" onclick="closeShift()">🔒 Close Shift & Log Out</button>
-    </div>
-  </div>
-</div>
-
 <!-- ADD/EDIT PRODUCT -->
 <div class="modal-bg" id="add-product-modal">
   <div class="modal modal-wide">
@@ -912,7 +878,7 @@ const S = {
   branches: [], wallets: [],
   selCustomer: null, payMethod: 'cash',
   adminTarget: null, adminPinBuf: '',
-  loginPinBuf: '', loginPinVisible: '',
+  allUsers: [],
   poLines: [], allSales: [], allProducts: [],
   charts: {}, returnSale: null, returnCondition: 'full'
 }
@@ -931,6 +897,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   S.branches = branches || []
   const bsel = document.getElementById('branch-sel')
   if (bsel) bsel.innerHTML = S.branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('')
+  // load attendants for login select
+  await populateLoginUserSelect()
   // populate branch selects in modals
   populateBranchSelects()
 })
@@ -983,7 +951,7 @@ function gotoScreen(name, skipActive=false) {
   // load data for each screen
   const loaders = {
     'summary': loadSales, 'inventory': loadInventory, 'customers': loadCustomers,
-    'budget': loadBudget, 'expenses': loadExpenses, 'shifts': loadShifts,
+    'budget': loadBudget, 'expenses': loadExpenses,
     'analytics': loadAnalytics, 'profit': loadProfit, 'categories': loadCategories, 'products': loadProductsAdmin, 'suppliers': loadSuppliers,
     'purchases': loadPurchases, 'transfers': loadTransfers, 'users': loadUsers,
     'settings': loadSettings, 'returns': loadReturnsLog
@@ -999,33 +967,28 @@ function adminGate(screen) {
 }
 
 // ============================================================
-// LOGIN PIN
+// LOGIN — pick your name from the dropdown
 // ============================================================
-function lpin(k) {
-  if (k === 'c') { S.loginPinBuf = ''; S.loginPinVisible = '' }
-  else if (k === 'ok') { doLogin(); return }
-  else if (S.loginPinBuf.length < 4) { S.loginPinBuf += k; S.loginPinVisible += '●' }
-  const dots = S.loginPinBuf.replace(/./g,'●').padEnd(4,'_').split('').join(' ')
-  document.getElementById('login-pin-disp').textContent = dots
+async function populateLoginUserSelect() {
+  const sel = document.getElementById('login-user-sel')
+  if (!sel) return
+  const { data: users } = await sb.from('users').select('*').eq('is_active', true).order('name')
+  S.allUsers = users || []
+  sel.innerHTML = S.allUsers.map(u => `<option value="${u.id}">${esc(u.name)}${u.role && u.role!=='cashier' ? ' ('+u.role+')' : ''}</option>`).join('')
 }
 
 async function doLogin() {
-  if (!S.loginPinBuf) { notify('Enter PIN','','❌'); return }
+  const sel = document.getElementById('login-user-sel')
+  const userId = sel?.value
+  if (!userId) { notify('Select your name','',false); return }
   const btn = document.getElementById('login-btn')
   btn.disabled = true; btn.textContent = 'Signing in…'
   const branchId = document.getElementById('branch-sel').value
-  const float = parseFloat(document.getElementById('float-input').value) || 0
-  const { data: users, error } = await sb.from('users').select('*').eq('pin', S.loginPinBuf).eq('is_active', true)
-  if (error || !users?.length) {
-    notify('❌ Invalid PIN','Try again', false); btn.disabled=false; btn.textContent='🔓 Begin Shift'; S.loginPinBuf=''; document.getElementById('login-pin-disp').textContent='_ _ _ _'; return
-  }
-  S.user = users[0]
+  const user = (S.allUsers||[]).find(u => u.id === userId)
+  if (!user) { notify('❌ Could not find that user','', false); btn.disabled=false; btn.textContent='🔓 Start Selling'; return }
+  S.user = user
+  S.shift = null
   S.branch = S.branches.find(b => b.id === branchId) || S.branches[0]
-  // Open shift
-  const { data: shift } = await sb.from('shifts').insert({
-    user_id: S.user.id, branch_id: S.branch.id, opening_float: float, status: 'open'
-  }).select().single()
-  S.shift = shift
   // Load products into memory
   const { data: prods } = await sb.from('products').select('*').eq('is_active', true).order('name')
   S.products = prods || []
@@ -1035,11 +998,19 @@ async function doLogin() {
   showApp()
 }
 
+function logout() {
+  S.user = null; S.branch = null; S.shift = null; S.cart = []
+  document.getElementById('app-shell').classList.remove('visible')
+  document.getElementById('login-screen').style.display = 'flex'
+  const btn = document.getElementById('login-btn')
+  if (btn) { btn.disabled = false; btn.textContent = '🔓 Start Selling' }
+  populateLoginUserSelect()
+}
+
 function showApp() {
   document.getElementById('login-screen').style.display = 'none'
   document.getElementById('app-shell').classList.add('visible')
   document.getElementById('tb-branch').textContent = S.branch.name.replace('ELTEK — ','')
-  document.getElementById('tb-shift').textContent = '#' + (S.shift?.id?.slice(-4) || '—')
   document.getElementById('tb-initials').textContent = S.user.initials || S.user.name[0]
   document.getElementById('tb-name').textContent = S.user.name
   document.getElementById('tb-role').textContent = S.user.role
@@ -1274,7 +1245,7 @@ function calcChange() {
 // ============================================================
 async function processCheckout() {
   if (!S.cart.length) { notify('Empty cart','Add products first', false); return }
-  if (!S.shift) { notify('No active shift', 'Please log in again', false); return }
+  if (!S.user) { notify('Please log in', '', false); return }
 
   const btn = document.getElementById('charge-btn')
   btn.disabled = true; btn.textContent = '⏳ Processing…'
@@ -1297,7 +1268,7 @@ async function processCheckout() {
       invoice_number: invNum,
       branch_id: S.branch.id, user_id: S.user.id,
       customer_id: S.selCustomer?.id || null,
-      shift_id: S.shift.id,
+      shift_id: null,
       subtotal, discount, vat_amount: vat, total, status: 'paid'
     }).select().single()
     if (se) throw se
@@ -1871,103 +1842,6 @@ async function saveExpense() {
 }
 
 // ============================================================
-// SHIFTS
-// ============================================================
-async function loadShifts() {
-  const today = new Date(); today.setHours(0,0,0,0)
-  const { data: shifts } = await sb.from('shifts').select(`*,users(name,initials)`).eq('branch_id', S.branch.id).gte('opened_at', today.toISOString()).order('opened_at',{ascending:false})
-  // Cash sales for current shift
-  const { data: cashSales } = S.shift ? await sb.from('sales').select('total,payments(method)').eq('shift_id', S.shift.id).eq('status','paid') : { data: [] }
-  const cashTotal = (cashSales||[]).filter(s=>s.payments?.some(p=>p.method==='cash')).reduce((s,x)=>s+parseFloat(x.total||0),0)
-  const expected = parseFloat(S.shift?.opening_float||0) + cashTotal
-  // Active shift panel
-  const activePanel = document.getElementById('shift-active-panel')
-  if (S.shift) {
-    const dur = Math.floor((Date.now() - new Date(S.shift.opened_at)) / 60000)
-    activePanel.innerHTML = `
-      <div class="card" style="margin-bottom:14px;border-color:rgba(16,185,129,.3)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <span class="sec-label" style="margin:0">Active Shift</span>
-          <span class="tag tag-grn">OPEN · ${dur}m</span>
-        </div>
-        <div class="g2" style="gap:8px">
-          <div style="background:var(--s2);border-radius:7px;padding:10px"><div style="font-size:10px;color:var(--t3)">Cashier</div><div style="font-weight:600;margin-top:2px">${esc(S.user.name)}</div></div>
-          <div style="background:var(--s2);border-radius:7px;padding:10px"><div style="font-size:10px;color:var(--t3)">Branch</div><div style="font-weight:600;margin-top:2px">${esc(S.branch.name.replace('ELTEK — ',''))}</div></div>
-          <div style="background:var(--s2);border-radius:7px;padding:10px"><div style="font-size:10px;color:var(--t3)">Opening Float</div><div style="font-weight:600;margin-top:2px;color:var(--acc)">KSh ${fmt(S.shift.opening_float)}</div></div>
-          <div style="background:var(--s2);border-radius:7px;padding:10px"><div style="font-size:10px;color:var(--t3)">Expected Cash</div><div style="font-weight:600;margin-top:2px;color:var(--grn)">KSh ${fmt(expected)}</div></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sec-label">Today's Collections</div>
-        <div id="shift-collections"></div>
-      </div>`
-    loadShiftCollections()
-  } else {
-    activePanel.innerHTML = `<div class="empty-state"><div class="es-icon">🕐</div><div class="es-text">No active shift</div></div>`
-  }
-  // All shifts today
-  const list = document.getElementById('shifts-list')
-  list.innerHTML = (shifts||[]).map(sh=>`
-    <div class="card" style="border-left:3px solid ${sh.status==='open'?'var(--grn)':'var(--t3)'}">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <div class="cav" style="background:var(--pur)">${esc(sh.users?.initials||'?')}</div>
-        <div><div style="font-weight:600">${esc(sh.users?.name||'Unknown')}</div><div style="font-size:10px;color:var(--t3)">Opened ${fmtTime(sh.opened_at)}</div></div>
-        <span class="tag ${sh.status==='open'?'tag-grn':'tag-yel'}" style="margin-left:auto">${sh.status==='open'?'ACTIVE':'CLOSED'}</span>
-      </div>
-      ${sh.status==='closed'?`<div style="font-size:11px;color:var(--t3)">Float: KSh ${fmt(sh.opening_float)} → Cash: KSh ${fmt(sh.closing_float||0)} · Variance: <span style="${parseFloat(sh.cash_variance||0)===0?'color:var(--grn)':'color:var(--red)'}">${parseFloat(sh.cash_variance||0)>=0?'+':''}KSh ${fmt(sh.cash_variance||0)}</span></div>`:''}
-    </div>`).join('') || '<div class="empty-state"><div class="es-text">No shifts today</div></div>'
-  // Close shift modal summary
-  document.getElementById('close-shift-summary').innerHTML = `
-    <div style="background:var(--s2);border-radius:8px;padding:12px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Opening Float</span><span>KSh ${fmt(S.shift?.opening_float||0)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Expected Cash in Drawer</span><span style="font-weight:700;color:var(--grn)">KSh ${fmt(expected)}</span></div>
-    </div>`
-}
-
-async function loadShiftCollections() {
-  if (!S.shift) return
-  const { data: sales } = await sb.from('sales').select('total,payments(method,amount)').eq('shift_id', S.shift.id).eq('status','paid')
-  const byMethod = {}
-  ;(sales||[]).forEach(s => (s.payments||[]).forEach(p => { byMethod[p.method] = (byMethod[p.method]||0) + parseFloat(p.amount||0) }))
-  const total = Object.values(byMethod).reduce((s,v)=>s+v,0)
-  const el = document.getElementById('shift-collections')
-  if (!el) return
-  el.innerHTML = Object.entries(byMethod).map(([m,amt])=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b1)">
-      <div style="font-weight:600;font-size:12px;text-transform:capitalize">${m}</div>
-      <span style="font-size:14px;font-weight:700;color:var(--grn)">KSh ${fmt(amt)}</span>
-    </div>`).join('') + `<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;padding-top:8px"><span>Total</span><span style="color:var(--grn)">KSh ${fmt(total)}</span></div>`
-}
-
-function calcVariance() {
-  const closing = parseFloat(document.getElementById('closing-float')?.value)||0
-  const expected = parseFloat(document.getElementById('close-shift-summary')?.querySelector('[style*="font-weight:700"]')?.textContent?.replace(/[^0-9]/g,'')||0)
-  const variance = closing - expected
-  const el = document.getElementById('variance-display')
-  if (el) {
-    el.textContent = `Variance: ${variance>=0?'+':''}KSh ${fmt(variance)}`
-    el.style.color = variance === 0 ? 'var(--grn)' : variance > 0 ? 'var(--yel)' : 'var(--red)'
-  }
-}
-
-async function closeShift() {
-  if (!S.shift) { notify('No active shift','',false); return }
-  const closing = parseFloat(document.getElementById('closing-float')?.value)||0
-  const notes = document.getElementById('closing-notes')?.value||''
-  // Calculate expected
-  const { data: sales } = await sb.from('sales').select('total,payments(method,amount)').eq('shift_id', S.shift.id).eq('status','paid')
-  const cashSales = (sales||[]).flatMap(s=>(s.payments||[]).filter(p=>p.method==='cash'))
-  const cashCollected = cashSales.reduce((s,p)=>s+parseFloat(p.amount||0),0)
-  const expected = parseFloat(S.shift.opening_float||0) + cashCollected
-  const variance = closing - expected
-  await sb.from('shifts').update({ status:'closed', closed_at: new Date(), closing_float: closing, expected_cash: expected, cash_variance: variance, notes }).eq('id', S.shift.id)
-  notify('🔒 Shift Closed', `Variance: KSh ${fmt(variance)}`)
-  closeModal('close-shift-modal')
-  // Log out
-  setTimeout(() => { S.user=null; S.branch=null; S.shift=null; S.cart=[]; document.getElementById('app-shell').classList.remove('visible'); document.getElementById('login-screen').style.display='flex'; S.loginPinBuf=''; document.getElementById('login-pin-disp').textContent='_ _ _ _' }, 1500)
-}
-
-// ============================================================
 // ANALYTICS
 // ============================================================
 async function loadAnalytics() {
@@ -2013,6 +1887,77 @@ async function loadAnalytics() {
       <div style="width:100px;height:6px;background:var(--b1);border-radius:3px"><div style="height:100%;width:${topC[0]?Math.round(rev/topC[0][1]*100):0}%;background:var(--grn);border-radius:3px"></div></div>
       <span style="font-size:11px;font-weight:700;width:70px;text-align:right">KSh ${fmt(Math.round(rev))}</span>
     </div>`).join('')
+  loadAttendantDailySummary()
+}
+
+// ============================================================
+// TODAY'S SALES SUMMARY — BY ATTENDANT
+// ============================================================
+async function loadAttendantDailySummary() {
+  const dateEl = document.getElementById('attendant-summary-date')
+  const today = new Date(); today.setHours(0,0,0,0)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
+  if (dateEl) dateEl.textContent = today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+  const { data: sales } = await sb.from('sales')
+    .select(`total,subtotal,discount,created_at,payments(method,amount),sale_items(qty,line_total,products(name)),users(name,initials)`)
+    .eq('branch_id', S.branch.id).eq('status','paid')
+    .gte('created_at', today.toISOString()).lt('created_at', tomorrow.toISOString())
+    .order('created_at')
+  const allS = sales || []
+  const el = document.getElementById('attendant-summary')
+  if (!el) return
+  if (!allS.length) { el.innerHTML = `<div class="empty-state"><div class="es-icon">🧾</div><div class="es-text">No sales recorded yet today</div></div>`; return }
+
+  // Group by attendant
+  const byUser = {}
+  allS.forEach(s => {
+    const name = s.users?.name || 'Unknown'
+    byUser[name] = byUser[name] || { initials: s.users?.initials || name[0], txns: 0, items: 0, revenue: 0, discount: 0, byMethod: {}, byProd: {} }
+    const u = byUser[name]
+    u.txns += 1
+    u.revenue += parseFloat(s.total||0)
+    u.discount += parseFloat(s.discount||0)
+    ;(s.sale_items||[]).forEach(i => {
+      u.items += parseFloat(i.qty||0)
+      const pn = i.products?.name || 'Unknown'
+      u.byProd[pn] = (u.byProd[pn]||0) + parseFloat(i.qty||0)
+    })
+    ;(s.payments||[]).forEach(p => { u.byMethod[p.method] = (u.byMethod[p.method]||0) + parseFloat(p.amount||0) })
+  })
+
+  const names = Object.keys(byUser).sort((a,b) => byUser[b].revenue - byUser[a].revenue)
+  el.innerHTML = names.map(name => {
+    const u = byUser[name]
+    const avgBasket = u.txns ? Math.round(u.revenue / u.txns) : 0
+    const topProds = Object.entries(u.byProd).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    const methods = Object.entries(u.byMethod).sort((a,b)=>b[1]-a[1])
+    return `<div class="card" style="margin-bottom:10px;background:var(--s2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div class="cav" style="background:var(--pur)">${esc(u.initials)}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px">${esc(name)}</div>
+          <div style="font-size:10px;color:var(--t3)">${u.txns} sale${u.txns!==1?'s':''} · ${fmt(u.items)} item${u.items!==1?'s':''} sold</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:800;color:var(--grn)">KSh ${fmt(Math.round(u.revenue))}</div>
+          <div style="font-size:10px;color:var(--t3)">avg basket KSh ${fmt(avgBasket)}${u.discount>0?` · KSh ${fmt(Math.round(u.discount))} discount given`:''}</div>
+        </div>
+      </div>
+      <div class="g2" style="gap:10px">
+        <div>
+          <div class="stat-label" style="margin-bottom:6px">Payment Methods</div>
+          ${methods.map(([m,amt])=>`<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="text-transform:capitalize">${esc(m)}</span><span style="font-weight:700">KSh ${fmt(Math.round(amt))}</span></div>`).join('') || '<div style="font-size:11px;color:var(--t3)">—</div>'}
+        </div>
+        <div>
+          <div class="stat-label" style="margin-bottom:6px">Top Items Sold</div>
+          ${topProds.map(([pn,qty])=>`<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">${esc(pn)}</span><span style="font-weight:700">×${fmt(qty)}</span></div>`).join('') || '<div style="font-size:11px;color:var(--t3)">—</div>'}
+        </div>
+      </div>
+    </div>`
+  }).join('') + `<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;padding:10px 4px 0;border-top:1px solid var(--b1);margin-top:4px">
+      <span>Total — All Attendants</span>
+      <span style="color:var(--grn)">KSh ${fmt(Math.round(names.reduce((s,n)=>s+byUser[n].revenue,0)))} · ${allS.length} sale${allS.length!==1?'s':''}</span>
+    </div>`
 }
 
 function renderLineChart(id, labels, data, label, color) {
@@ -2763,9 +2708,15 @@ async function loadCategories() {
     const subsList = [...grp.subs]
     return `<div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div>
-          <div style="font-weight:800;font-size:14px">📁 ${esc(cat)}</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px">${n} product${n!==1?'s':''} · ${active} active${subsList.length?` · ${subsList.length} subcategor${subsList.length===1?'y':'ies'}`:''}</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="stat-card" style="padding:8px 14px;text-align:center;min-width:64px">
+            <div class="stat-val" style="color:var(--acc);font-size:20px">${n}</div>
+            <div class="stat-label" style="font-size:9px">product${n!==1?'s':''}</div>
+          </div>
+          <div>
+            <div style="font-weight:800;font-size:14px">📁 ${esc(cat)}</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">${active} active${subsList.length?` · ${subsList.length} subcategor${subsList.length===1?'y':'ies'}`:''}</div>
+          </div>
         </div>
         <div style="display:flex;gap:18px;text-align:right">
           <div><div class="stat-label">Stock Value</div><div style="font-weight:700;font-size:13px">KSh ${fmt(Math.round(value))}</div></div>
