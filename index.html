@@ -9,13 +9,29 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#070A12;--s1:#0D1120;--s2:#111827;--s3:#1a2236;--s4:#1e293b;
-  --b1:#1e2d45;--b2:#253354;--b3:#2d3f5e;
-  --acc:#3b82f6;--acc2:#2563eb;--grn:#10b981;--grn2:#059669;
-  --yel:#f59e0b;--red:#ef4444;--pur:#8b5cf6;--cyn:#06b6d4;--mpesa:#00a651;
-  --t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;--t4:#475569;
+  --bg:#0a0015;--s1:rgba(255,255,255,0.05);--s2:rgba(255,255,255,0.08);--s3:rgba(255,255,255,0.12);--s4:rgba(255,255,255,0.16);
+  --b1:rgba(255,255,255,0.1);--b2:rgba(255,255,255,0.18);--b3:rgba(168,85,247,0.35);
+  --acc:#00d4ff;--acc2:#a855f7;--grn:#00ff88;--grn2:#00cc66;
+  --yel:#ffcc00;--red:#ff3366;--pur:#a855f7;--cyn:#00d4ff;--mpesa:#00ff88;
+  --t1:#ffffff;--t2:rgba(255,255,255,0.75);--t3:rgba(255,255,255,0.5);--t4:rgba(255,255,255,0.3);
+  --glow-acc:0 0 20px rgba(0,212,255,0.45);--glow-pur:0 0 20px rgba(168,85,247,0.45);
+  --glow-grn:0 0 20px rgba(0,255,136,0.4);--glow-red:0 0 20px rgba(255,51,102,0.4);
+  --mx:50%;--my:50%;
 }
-body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;overflow:hidden;height:100vh}
+body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;overflow:hidden;height:100vh;position:relative}
+/* ── NEON GODMODE BACKGROUND ── */
+body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;background:
+  radial-gradient(ellipse at 18% 50%,rgba(120,40,200,0.32) 0%,transparent 58%),
+  radial-gradient(ellipse at 82% 18%,rgba(0,180,255,0.24) 0%,transparent 52%),
+  radial-gradient(ellipse at 60% 85%,rgba(255,0,110,0.14) 0%,transparent 48%),
+  linear-gradient(135deg,#0a0015 0%,#120028 50%,#0d001f 100%);
+  animation:bgPulse 14s ease-in-out infinite alternate}
+@keyframes bgPulse{0%{filter:hue-rotate(0deg) brightness(1)}100%{filter:hue-rotate(22deg) brightness(1.1)}}
+/* cursor-follow neon spotlight */
+#cursor-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;transition:opacity .25s;opacity:0;
+  background:radial-gradient(420px circle at var(--mx) var(--my),rgba(168,85,247,0.16),rgba(0,212,255,0.08) 35%,transparent 65%)}
+#cursor-glow.on{opacity:1}
+::-webkit-scrollbar-thumb{background:rgba(168,85,247,0.4)!important}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 /* LOGIN */
 #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;flex-direction:column}
@@ -121,9 +137,86 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .empty-state{text-align:center;padding:40px 20px;color:var(--t3)}
 .empty-state .es-icon{font-size:36px;margin-bottom:10px}
 .empty-state .es-text{font-size:13px}
+
+/* ════════ GODMODE NEON OVERRIDES ════════ */
+.login-card,.card,.stat-card,.modal,.tbl-wrap{background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--b1);border-radius:14px;position:relative;overflow:hidden;transition:transform .25s cubic-bezier(.4,0,.2,1),border-color .25s,box-shadow .25s}
+.card::before,.stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.05) 0%,transparent 60%);pointer-events:none;border-radius:inherit}
+.card:hover,.stat-card:hover{transform:translateY(-3px);border-color:rgba(168,85,247,.45);box-shadow:0 10px 34px rgba(168,85,247,.22),0 0 0 1px rgba(168,85,247,.15)}
+.login-logo{background:linear-gradient(135deg,var(--acc),var(--pur),var(--red));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% auto;animation:logoShimmer 4s linear infinite;font-weight:900}
+.tb-logo{background:linear-gradient(135deg,var(--acc),var(--pur));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:logoShimmer 7s linear infinite}
+@keyframes logoShimmer{0%{background-position:0% center}100%{background-position:200% center}}
+/* Buttons glow */
+.btn{position:relative;box-shadow:none}
+.btn-acc{background:linear-gradient(135deg,var(--acc),#0099cc);color:#001018;font-weight:800;box-shadow:0 0 14px rgba(0,212,255,.35)}
+.btn-acc:hover{box-shadow:0 0 26px rgba(0,212,255,.7);transform:translateY(-1px)}
+.btn-grn{background:linear-gradient(135deg,var(--grn),#00cc66);color:#001a0d;font-weight:800;box-shadow:0 0 14px rgba(0,255,136,.3)}
+.btn-grn:hover{box-shadow:0 0 26px rgba(0,255,136,.65);transform:translateY(-1px)}
+.btn-red{background:linear-gradient(135deg,var(--red),#cc0044);color:#fff;box-shadow:0 0 14px rgba(255,51,102,.3)}
+.btn-red:hover{box-shadow:0 0 26px rgba(255,51,102,.6);transform:translateY(-1px)}
+.btn-yel{background:linear-gradient(135deg,var(--yel),#cc9900);color:#1a1400;box-shadow:0 0 14px rgba(255,204,0,.3)}
+.btn-yel:hover{box-shadow:0 0 26px rgba(255,204,0,.6);transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--b2);color:var(--t2)}
+.btn-ghost:hover{border-color:var(--pur);color:var(--t1);background:rgba(168,85,247,.14);box-shadow:var(--glow-pur);transform:translateY(-1px)}
+.btn-login{background:linear-gradient(135deg,var(--acc),var(--pur));color:#000;box-shadow:0 0 22px rgba(168,85,247,.4)}
+.btn-login:hover{box-shadow:0 0 34px rgba(0,212,255,.6);transform:translateY(-1px)}
+/* Sidebar nav glow */
+.sidebar{background:rgba(10,0,21,.55);backdrop-filter:blur(20px);position:relative}
+.sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--pur),var(--acc),transparent)}
+.nav-btn{position:relative;overflow:hidden}
+.nav-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--pur),var(--acc));opacity:0;transition:opacity .25s;border-radius:inherit}
+.nav-btn:hover::before{opacity:.16}
+.nav-btn:hover{color:var(--t1);border-color:rgba(0,212,255,.3);box-shadow:0 0 16px rgba(0,212,255,.18);transform:translateX(2px)}
+.nav-btn.active{background:linear-gradient(90deg,rgba(168,85,247,.22),rgba(0,212,255,.1));border-color:rgba(0,212,255,.4);color:var(--t1);box-shadow:0 0 18px rgba(0,212,255,.25),inset 3px 0 0 var(--acc)}
+.nav-btn .nav-icon,.nav-btn .nav-text{position:relative;z-index:1}
+.nav-icon{transition:transform .25s}
+.nav-btn:hover .nav-icon,.nav-btn.active .nav-icon{transform:scale(1.18)}
+/* Topbar */
+.topbar{background:rgba(10,0,21,.6);backdrop-filter:blur(20px);position:relative;border-bottom:1px solid var(--b1)}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--pur),var(--acc),var(--red),transparent)}
+.tb-pill{background:rgba(255,255,255,.06);border:1px solid var(--b1)}
+.tb-cashier{background:rgba(255,255,255,.06);border:1px solid var(--b1);transition:all .2s}
+.tb-cashier:hover{border-color:var(--pur);box-shadow:var(--glow-pur);background:rgba(168,85,247,.1)}
+.cav{background:linear-gradient(135deg,var(--pur),var(--acc));box-shadow:var(--glow-pur)}
+.tb-time{color:var(--acc);text-shadow:0 0 10px rgba(0,212,255,.5);font-family:monospace}
+/* Tags */
+.tag{transition:all .2s}
+.tag-grn{box-shadow:0 0 0 0 transparent}.tag-grn:hover{box-shadow:0 0 12px rgba(0,255,136,.35)}
+.tag-acc:hover{box-shadow:0 0 12px rgba(0,212,255,.35)}
+.tag-red:hover{box-shadow:0 0 12px rgba(255,51,102,.35)}
+.tag-pur:hover{box-shadow:0 0 12px rgba(168,85,247,.35)}
+.tag-yel:hover{box-shadow:0 0 12px rgba(255,204,0,.35)}
+/* Tables */
+.table th{background:rgba(0,0,0,.25);backdrop-filter:blur(8px)}
+.table tr{transition:background .15s,box-shadow .15s}
+.table tr:hover td{background:rgba(168,85,247,.09)!important;box-shadow:inset 3px 0 0 var(--pur)}
+/* Inputs */
+.input,.login-select{background:rgba(0,0,0,.3);border:1px solid var(--b1);transition:all .2s}
+.input:focus,.login-select:focus{border-color:var(--pur);box-shadow:0 0 0 3px rgba(168,85,247,.15),0 0 16px rgba(168,85,247,.15);outline:none}
+.pk{background:rgba(255,255,255,.06);border:1px solid var(--b1);transition:all .15s}
+.pk:hover{background:rgba(168,85,247,.18);border-color:var(--pur);transform:scale(1.05);box-shadow:var(--glow-pur)}
+.pk:active{transform:scale(.95)}
+.pk.grn:hover{box-shadow:var(--glow-grn)}.pk.red:hover{box-shadow:var(--glow-red)}
+.pin-display{box-shadow:inset 0 0 22px rgba(168,85,247,.12);border-color:rgba(168,85,247,.5)}
+/* Modal */
+.modal{box-shadow:0 0 70px rgba(168,85,247,.25);border-color:rgba(168,85,247,.3);animation:modalSlide .25s ease}
+@keyframes modalSlide{from{transform:translateY(16px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.modal-bg{backdrop-filter:blur(10px)}
+.modal-x:hover{background:rgba(255,51,102,.15);color:var(--red);box-shadow:var(--glow-red)}
+.modal-title{background:linear-gradient(135deg,var(--t1),var(--t2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+/* Tabs */
+.tab:hover{color:var(--t1);background:rgba(168,85,247,.08)}
+.tab.active{color:var(--acc);border-bottom-color:var(--acc);background:rgba(0,212,255,.08);text-shadow:0 0 10px rgba(0,212,255,.4)}
+/* Stat values glow */
+.stat-val{text-shadow:0 0 14px currentColor}
+.stat-card:hover .stat-val{text-shadow:0 0 22px currentColor}
+/* Generic interactive glow helper — applied via JS to clickable rows/items */
+.glow-hover{transition:box-shadow .2s,border-color .2s,transform .2s,background .2s}
+.glow-hover:hover{box-shadow:0 0 18px rgba(0,212,255,.25);border-color:rgba(0,212,255,.4)!important;transform:translateY(-1px)}
+.dot-g{box-shadow:0 0 8px var(--grn)}
 </style>
 </head>
 <body>
+<div id="cursor-glow"></div>
 
 <!-- NOTIFICATION -->
 <div class="notif" id="notif">
@@ -166,7 +259,8 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <button class="nav-btn active" id="nav-pos" onclick="gotoScreen('pos')"><span class="nav-icon">🛒</span>POS</button>
+    <button class="nav-btn active" id="nav-dashboard" onclick="gotoScreen('dashboard')"><span class="nav-icon">🏠</span>Dashboard</button>
+    <button class="nav-btn" id="nav-pos" onclick="gotoScreen('pos')"><span class="nav-icon">🛒</span>POS</button>
     <button class="nav-btn" id="nav-summary" onclick="gotoScreen('summary')"><span class="nav-icon">📋</span>Sales</button>
     <button class="nav-btn" id="nav-inventory" onclick="gotoScreen('inventory')"><span class="nav-icon">📦</span>Stock</button>
     <button class="nav-btn" id="nav-customers" onclick="gotoScreen('customers')"><span class="nav-icon">👥</span>Customers</button>
@@ -190,8 +284,43 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
   <!-- CONTENT -->
   <div class="content">
 
+<!-- ====== SCREEN: DASHBOARD ====== -->
+<div class="screen active" id="screen-dashboard">
+  <div class="page-header">
+    <div><div class="page-title" id="dash-greeting">🏠 Dashboard</div><div class="page-subtitle" id="dash-sub">Today's overview</div></div>
+    <div class="page-actions"><button class="btn btn-acc" onclick="gotoScreen('pos')">🛒 Go to POS</button></div>
+  </div>
+  <div class="scroll" style="padding:16px">
+    <div class="g4" id="dash-kpis" style="margin-bottom:14px"></div>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="sec-label">My Sales Today</div>
+        <div id="dash-my-sales"></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">Branch — Today's Top Sellers</div>
+        <div id="dash-top-products"></div>
+      </div>
+    </div>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="sec-label">Sales by Attendant — Today</div>
+        <div id="dash-attendants"></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">⚠️ Low Stock Alerts</div>
+        <div id="dash-low-stock"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-label">Recent Transactions</div>
+      <div id="dash-recent"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ====== SCREEN: POS ====== -->
-<div class="screen active" id="screen-pos">
+<div class="screen" id="screen-pos">
   <div style="display:grid;grid-template-columns:1fr 300px;height:100%;overflow:hidden">
     <!-- LEFT -->
     <div style="display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--b1)">
@@ -564,7 +693,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 <div class="screen" id="screen-users">
   <div class="page-header">
     <div><div class="page-title">👤 Users</div><div class="page-subtitle">Cashiers · Managers · PINs</div></div>
-    <div class="page-actions"><button class="btn btn-acc" onclick="openModal('add-user-modal')">+ Add User</button></div>
+    <div class="page-actions"><button class="btn btn-acc" onclick="openAddUser()">+ Add User</button></div>
   </div>
   <div class="scroll"><table class="table"><thead><tr><th>Name</th><th>Initials</th><th>Role</th><th>Branch</th><th>PIN</th><th>Active</th><th></th></tr></thead>
   <tbody id="users-tbody"></tbody></table></div>
@@ -813,13 +942,16 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
         <div class="form-row" style="margin:0"><label class="form-label">Initials *</label><input class="input" id="u-initials" placeholder="AW" maxlength="3"></div>
       </div>
       <div class="form-row-2">
-        <div class="form-row" style="margin:0"><label class="form-label">PIN (4 digits) *</label><input class="input" id="u-pin" type="password" maxlength="4" placeholder="••••"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">PIN (optional, 4 digits)</label><input class="input" id="u-pin" type="password" maxlength="4" placeholder="••••"></div>
         <div class="form-row" style="margin:0"><label class="form-label">Role *</label>
           <select class="input" id="u-role"><option value="cashier">Cashier</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select>
         </div>
       </div>
       <div class="form-row"><label class="form-label">Branch</label><select class="input" id="u-branch"></select></div>
-      <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:8px" onclick="saveUser()">Save User</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="saveUser()">Save User</button>
+        <button class="btn btn-ghost" id="delete-user-btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="deleteUser()">🗑 Delete</button>
+      </div>
     </div>
   </div>
 </div>
@@ -950,6 +1082,7 @@ function gotoScreen(name, skipActive=false) {
   if (nav) nav.classList.add('active')
   // load data for each screen
   const loaders = {
+    'dashboard': loadDashboard,
     'summary': loadSales, 'inventory': loadInventory, 'customers': loadCustomers,
     'budget': loadBudget, 'expenses': loadExpenses,
     'analytics': loadAnalytics, 'profit': loadProfit, 'categories': loadCategories, 'products': loadProductsAdmin, 'suppliers': loadSuppliers,
@@ -1015,7 +1148,102 @@ function showApp() {
   document.getElementById('tb-name').textContent = S.user.name
   document.getElementById('tb-role').textContent = S.user.role
   loadPOS()
+  gotoScreen('dashboard')
   populateBranchSelects()
+}
+
+// ============================================================
+// DASHBOARD — cashier/attendant overview (no profit figures)
+// ============================================================
+async function loadDashboard() {
+  const hr = new Date().getHours()
+  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
+  const g = document.getElementById('dash-greeting')
+  if (g) g.textContent = `🏠 ${greet}, ${S.user?.name?.split(' ')[0] || 'there'}!`
+  const sub = document.getElementById('dash-sub')
+  if (sub) sub.textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ` · ${S.branch?.name?.replace('ELTEK — ','') || ''}`
+
+  const today = new Date(); today.setHours(0,0,0,0)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
+  const { data: sales } = await sb.from('sales')
+    .select(`id,invoice_number,total,created_at,payments(method,amount),sale_items(qty,line_total,products(name)),users(id,name,initials)`)
+    .eq('branch_id', S.branch.id).eq('status','paid')
+    .gte('created_at', today.toISOString()).lt('created_at', tomorrow.toISOString())
+    .order('created_at', { ascending: false })
+  const allS = sales || []
+
+  // ---- KPIs (no profit) ----
+  const revenue = allS.reduce((s,x)=>s+parseFloat(x.total||0),0)
+  const items = allS.reduce((s,x)=>s + (x.sale_items||[]).reduce((a,i)=>a+parseFloat(i.qty||0),0), 0)
+  const mySales = allS.filter(s => s.users?.id === S.user?.id)
+  const myRevenue = mySales.reduce((s,x)=>s+parseFloat(x.total||0),0)
+  document.getElementById('dash-kpis').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Branch Sales Today</div><div class="stat-val" style="color:var(--grn)">KSh ${fmt(Math.round(revenue))}</div><div class="stat-sub">${allS.length} transaction${allS.length!==1?'s':''}</div></div>
+    <div class="stat-card"><div class="stat-label">Items Sold Today</div><div class="stat-val" style="color:var(--acc)">${fmt(items)}</div></div>
+    <div class="stat-card"><div class="stat-label">My Sales Today</div><div class="stat-val" style="color:var(--pur)">KSh ${fmt(Math.round(myRevenue))}</div><div class="stat-sub">${mySales.length} transaction${mySales.length!==1?'s':''}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Basket (Branch)</div><div class="stat-val">KSh ${fmt(allS.length?Math.round(revenue/allS.length):0)}</div></div>`
+
+  // ---- My sales today (detail list) ----
+  const myEl = document.getElementById('dash-my-sales')
+  if (myEl) {
+    myEl.innerHTML = mySales.length ? mySales.slice(0,8).map(s => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--b1)">
+        <div><div style="font-size:12px;font-weight:600">#${esc(s.invoice_number||'—')}</div><div style="font-size:10px;color:var(--t3)">${fmtTime(s.created_at)} · ${(s.sale_items||[]).reduce((a,i)=>a+parseFloat(i.qty||0),0)} item(s)</div></div>
+        <span style="font-weight:700;color:var(--grn)">KSh ${fmt(Math.round(parseFloat(s.total||0)))}</span>
+      </div>`).join('') + (mySales.length > 8 ? `<div style="text-align:center;font-size:10px;color:var(--t3);padding-top:8px">+ ${mySales.length-8} more</div>` : '')
+      : `<div class="empty-state"><div class="es-icon">🧾</div><div class="es-text">You haven't made any sales yet today</div></div>`
+  }
+
+  // ---- Branch top sellers today ----
+  const byProd = {}
+  allS.forEach(s => (s.sale_items||[]).forEach(i => { const n=i.products?.name||'Unknown'; byProd[n]=(byProd[n]||0)+parseFloat(i.qty||0) }))
+  const topP = Object.entries(byProd).sort((a,b)=>b[1]-a[1]).slice(0,6)
+  const tpEl = document.getElementById('dash-top-products')
+  if (tpEl) tpEl.innerHTML = topP.length ? topP.map(([name,qty])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="flex:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>
+      <div style="width:90px;height:6px;background:var(--b1);border-radius:3px"><div style="height:100%;width:${topP[0]?Math.round(qty/topP[0][1]*100):0}%;background:var(--acc);border-radius:3px"></div></div>
+      <span style="font-size:11px;font-weight:700;width:50px;text-align:right">×${fmt(qty)}</span>
+    </div>`).join('') : `<div class="empty-state"><div class="es-text">No sales yet today</div></div>`
+
+  // ---- Sales by attendant (condensed) ----
+  const byUser = {}
+  allS.forEach(s => {
+    const name = s.users?.name || 'Unknown'
+    byUser[name] = byUser[name] || { initials: s.users?.initials || name[0], txns:0, revenue:0 }
+    byUser[name].txns += 1
+    byUser[name].revenue += parseFloat(s.total||0)
+  })
+  const names = Object.keys(byUser).sort((a,b)=>byUser[b].revenue-byUser[a].revenue)
+  const auEl = document.getElementById('dash-attendants')
+  if (auEl) auEl.innerHTML = names.length ? names.map(name => { const u=byUser[name]; return `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+      <div class="cav" style="background:var(--pur)">${esc(u.initials)}</div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:600">${esc(name)}</div><div style="font-size:10px;color:var(--t3)">${u.txns} sale${u.txns!==1?'s':''}</div></div>
+      <span style="font-weight:700;font-size:13px;color:var(--grn)">KSh ${fmt(Math.round(u.revenue))}</span>
+    </div>`}).join('') : `<div class="empty-state"><div class="es-text">No sales yet today</div></div>`
+
+  // ---- Low stock alerts (this branch) ----
+  const { data: inv } = await sb.from('inventory').select('qty,products(name,reorder_point,is_active)').eq('branch_id', S.branch.id)
+  const low = (inv||[]).filter(i => i.products?.is_active && i.qty <= (i.products?.reorder_point||0)).sort((a,b)=>a.qty-b.qty).slice(0,8)
+  const lsEl = document.getElementById('dash-low-stock')
+  if (lsEl) lsEl.innerHTML = low.length ? low.map(i => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--b1)">
+      <div style="font-size:12px">${esc(i.products?.name||'Unknown')}</div>
+      <span class="tag ${i.qty<=0?'tag-red':'tag-yel'}">${i.qty} left · reorder at ${i.products?.reorder_point||0}</span>
+    </div>`).join('') : `<div class="empty-state"><div class="es-icon">✅</div><div class="es-text">Stock levels look healthy</div></div>`
+
+  // ---- Recent transactions (whole branch) ----
+  const recEl = document.getElementById('dash-recent')
+  if (recEl) recEl.innerHTML = allS.length ? allS.slice(0,10).map(s => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--b1)">
+      <div class="cav" style="background:var(--acc);width:28px;height:28px;font-size:10px">${esc(s.users?.initials||'?')}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">#${esc(s.invoice_number||'—')} <span style="font-weight:400;color:var(--t3)">· ${esc(s.users?.name||'Unknown')}</span></div>
+        <div style="font-size:10px;color:var(--t3)">${fmtTime(s.created_at)} · ${(s.payments||[]).map(p=>p.method).join(', ')||'—'}</div>
+      </div>
+      <span style="font-weight:700">KSh ${fmt(Math.round(parseFloat(s.total||0)))}</span>
+    </div>`).join('') : `<div class="empty-state"><div class="es-icon">🧾</div><div class="es-text">No transactions recorded yet today</div></div>`
 }
 
 // ============================================================
@@ -2322,11 +2550,24 @@ async function loadUsers() {
     <td style="display:flex;gap:4px">
       <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px" onclick="editUser('${u.id}')">✏️</button>
       <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px;color:var(--red)" onclick="toggleUser('${u.id}',${!u.is_active})">${u.is_active?'Deactivate':'Activate'}</button>
+      <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px;color:var(--red)" onclick="quickDeleteUser('${u.id}')">🗑</button>
     </td>
   </tr>`).join('')
   // populate branch select in add-user modal
   const ubr = document.getElementById('u-branch')
   if (ubr) ubr.innerHTML = '<option value="">All Branches</option>' + S.branches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('')
+}
+
+function openAddUser() {
+  document.getElementById('edit-user-id').value = ''
+  document.getElementById('user-modal-title').textContent = '+ Add User'
+  document.getElementById('u-name').value = ''
+  document.getElementById('u-initials').value = ''
+  document.getElementById('u-pin').value = ''
+  document.getElementById('u-role').value = 'cashier'
+  document.getElementById('u-branch').value = ''
+  document.getElementById('delete-user-btn').style.display = 'none'
+  openModal('add-user-modal')
 }
 
 function editUser(id) {
@@ -2339,6 +2580,7 @@ function editUser(id) {
   document.getElementById('u-pin').value = u.pin||''
   document.getElementById('u-role').value = u.role||'cashier'
   document.getElementById('u-branch').value = u.branch_id||''
+  document.getElementById('delete-user-btn').style.display = 'inline-flex'
   openModal('add-user-modal')
 }
 
@@ -2348,11 +2590,13 @@ async function saveUser() {
   const pin = document.getElementById('u-pin').value.trim()
   const role = document.getElementById('u-role').value
   const branchId = document.getElementById('u-branch').value||null
-  if (!name||!initials||!pin||pin.length<4) { notify('Fill all fields. PIN must be 4 digits','',false); return }
-  const payload = { name, initials, pin, role, branch_id:branchId, is_active:true }
+  if (!name||!initials) { notify('Enter name and initials','',false); return }
+  if (pin && pin.length<4) { notify('PIN must be 4 digits (or leave blank)','',false); return }
+  const payload = { name, initials, role, branch_id:branchId, is_active:true }
+  if (pin) payload.pin = pin
   const editId = document.getElementById('edit-user-id').value
   if (editId) await sb.from('users').update(payload).eq('id',editId)
-  else await sb.from('users').insert(payload)
+  else await sb.from('users').insert({ ...payload, pin: pin || String(Math.floor(1000+Math.random()*9000)) })
   notify('✅ User Saved', name)
   closeModal('add-user-modal')
   document.getElementById('edit-user-id').value=''
@@ -2363,6 +2607,41 @@ async function toggleUser(id, active) {
   await sb.from('users').update({ is_active:active }).eq('id',id)
   notify(active?'✅ Activated':'⏹ Deactivated','')
   loadUsers()
+}
+
+async function deleteUser() {
+  const id = document.getElementById('edit-user-id').value
+  if (!id) return
+  const u = allUsers.find(x=>x.id===id)
+  if (!u) return
+  if (!confirm(`Permanently delete ${u.name}? This cannot be undone.`)) return
+  const { error } = await sb.from('users').delete().eq('id', id)
+  if (error) {
+    // Most likely blocked by linked sales records (foreign key) — offer to deactivate instead
+    notify('❌ Could not delete', 'This user has sales history — deactivating instead', false)
+    await sb.from('users').update({ is_active:false }).eq('id', id)
+  } else {
+    notify('🗑 User Deleted', u.name)
+  }
+  closeModal('add-user-modal')
+  document.getElementById('edit-user-id').value=''
+  loadUsers()
+  populateLoginUserSelect()
+}
+
+async function quickDeleteUser(id) {
+  const u = allUsers.find(x=>x.id===id)
+  if (!u) return
+  if (!confirm(`Permanently delete ${u.name}? This cannot be undone.`)) return
+  const { error } = await sb.from('users').delete().eq('id', id)
+  if (error) {
+    notify('❌ Could not delete', 'This user has sales history — deactivating instead', false)
+    await sb.from('users').update({ is_active:false }).eq('id', id)
+  } else {
+    notify('🗑 User Deleted', u.name)
+  }
+  loadUsers()
+  populateLoginUserSelect()
 }
 
 // ============================================================
@@ -2759,6 +3038,23 @@ async function saveNewCategory() {
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => selPayMethod('cash'), 100)
 })
+
+// ── NEON GODMODE: cursor-follow spotlight + hover glow ──
+;(function(){
+  const glow = document.getElementById('cursor-glow')
+  let raf = null, tx = 50, ty = 50
+  document.addEventListener('mousemove', e => {
+    tx = (e.clientX / window.innerWidth) * 100
+    ty = (e.clientY / window.innerHeight) * 100
+    if (glow) glow.classList.add('on')
+    if (!raf) raf = requestAnimationFrame(() => {
+      document.documentElement.style.setProperty('--mx', tx + '%')
+      document.documentElement.style.setProperty('--my', ty + '%')
+      raf = null
+    })
+  }, { passive: true })
+  document.addEventListener('mouseleave', () => glow && glow.classList.remove('on'))
+})()
 </script>
 </body>
 </html>
