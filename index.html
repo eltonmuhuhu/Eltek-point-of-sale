@@ -2227,7 +2227,8 @@ function renderPOLines() {
     const matched = S.products.find(p=>p.name.toLowerCase()===(line.name||'').toLowerCase()||p.sku.toLowerCase()===(line.name||'').toLowerCase())
     return `
     <div style="border:1px solid var(--bd);border-radius:8px;padding:8px;margin-bottom:8px">
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;align-items:center">
+      <div style="display:grid;grid-template-columns:auto 2fr 1fr 1fr auto;gap:6px;align-items:center">
+        <span style="color:var(--t3);font-size:12px">${idx+1}.</span>
         <input class="input" style="height:32px" placeholder="Product name/SKU" value="${esc(line.name)}" oninput="updatePOLine(${idx},'name',this.value)" list="po-prod-list">
         <input class="input" style="height:32px" type="number" placeholder="Qty" value="${line.qty}" oninput="updatePOLine(${idx},'qty',this.value)">
         <input class="input" style="height:32px" type="number" placeholder="Cost" value="${line.cost||''}" oninput="updatePOLine(${idx},'cost',this.value)">
