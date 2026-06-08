@@ -217,6 +217,18 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
 .glow-hover{transition:box-shadow .2s,border-color .2s,background .2s}
 .glow-hover:hover{background:rgba(0,212,255,.1);box-shadow:0 0 18px rgba(0,212,255,.3);border-color:rgba(0,212,255,.45)!important}
 .dot-g{box-shadow:0 0 8px var(--grn)}
+/* Payment method tiles + generic hover-highlight surfaces */
+.pm-tile{transition:background .18s,border-color .18s,box-shadow .18s,transform .12s}
+.pm-tile:hover{background:rgba(0,212,255,.14)!important;border-color:var(--acc)!important;box-shadow:0 0 18px rgba(0,212,255,.3);transform:translateY(-1px)}
+.pm-tile:hover div:last-child{color:var(--t1)!important}
+.pm-tile:active{transform:translateY(0) scale(.97)}
+#cust-search,#cash-received,.input{transition:background .18s,border-color .18s,box-shadow .18s}
+#cust-search:hover,#cash-received:hover{border-color:rgba(168,85,247,.4);box-shadow:0 0 14px rgba(168,85,247,.18)}
+.cart-row{transition:background .18s,border-color .18s,box-shadow .18s}
+.cart-row:hover{background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.4);box-shadow:0 0 16px rgba(168,85,247,.2)}
+#cart-body button,#search-results button{transition:background .15s,border-color .15s,box-shadow .15s,color .15s,opacity .15s}
+#cart-body button:hover{background:rgba(168,85,247,.28)!important;border-color:var(--pur)!important;box-shadow:var(--glow-pur)}
+#cart-body button[onclick^="removeFromCart"]:hover{background:rgba(255,51,102,.18)!important;border-color:transparent!important;box-shadow:var(--glow-red);opacity:1}
 </style>
 </head>
 <body>
@@ -380,16 +392,16 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
       <div style="padding:10px 12px;border-bottom:1px solid var(--b1);flex-shrink:0">
         <div class="sec-label">Payment Method</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <div id="pay-cash" onclick="selPayMethod('cash')" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--acc);background:rgba(59,130,246,.1);cursor:pointer;text-align:center">
+          <div id="pay-cash" onclick="selPayMethod('cash')" class="pm-tile" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--acc);background:rgba(59,130,246,.1);cursor:pointer;text-align:center">
             <div style="font-size:17px">💵</div><div style="font-size:10px;font-weight:600;color:var(--acc)">Cash</div>
           </div>
-          <div id="pay-mpesa" onclick="selPayMethod('mpesa')" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
+          <div id="pay-mpesa" onclick="selPayMethod('mpesa')" class="pm-tile" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
             <div style="font-size:17px">📱</div><div style="font-size:10px;font-weight:600;color:var(--t2)">M-Pesa</div>
           </div>
-          <div id="pay-card" onclick="selPayMethod('card')" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
+          <div id="pay-card" onclick="selPayMethod('card')" class="pm-tile" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
             <div style="font-size:17px">💳</div><div style="font-size:10px;font-weight:600;color:var(--t2)">Card</div>
           </div>
-          <div id="pay-credit" onclick="selPayMethod('credit')" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
+          <div id="pay-credit" onclick="selPayMethod('credit')" class="pm-tile" style="padding:10px 8px;border-radius:8px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center">
             <div style="font-size:17px">📒</div><div style="font-size:10px;font-weight:600;color:var(--t2)">Credit</div>
           </div>
         </div>
@@ -1402,7 +1414,7 @@ function renderCart() {
     return
   }
   body.innerHTML = S.cart.map((item, idx) => `
-    <div style="display:grid;grid-template-columns:1fr auto;gap:6px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+    <div class="cart-row" style="display:grid;grid-template-columns:1fr auto;gap:6px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:6px">
       <div>
         <div style="font-weight:600;margin-bottom:3px;font-size:12px">${esc(item.product_name)}</div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
