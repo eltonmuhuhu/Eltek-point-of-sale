@@ -268,6 +268,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
     <div class="nav-sep"></div>
     <button class="nav-btn" id="nav-budget" onclick="gotoScreen('budget')"><span class="nav-icon">💰</span>Budget</button>
     <button class="nav-btn" id="nav-expenses" onclick="gotoScreen('expenses')"><span class="nav-icon">💵</span>Expenses</button>
+    <button class="nav-btn" id="nav-cashup" onclick="gotoScreen('cashup')"><span class="nav-icon">🧮</span>Summary</button>
     <button class="nav-btn" id="nav-analytics" onclick="gotoScreen('analytics')"><span class="nav-icon">📊</span>Reports</button>
     <button class="nav-btn nav-admin" id="nav-profit" onclick="adminGate('profit')" style="border:1px solid rgba(139,92,246,.3)"><span class="nav-icon">💹</span>Profit</button>
     <div class="nav-sep"></div>
@@ -551,6 +552,61 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
   <div class="scroll">
     <table class="table"><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Type</th><th>Amount</th><th>Approved By</th></tr></thead>
     <tbody id="expenses-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- ====== SCREEN: CASH-UP / DAY SUMMARY ====== -->
+<div class="screen" id="screen-cashup">
+  <div class="page-header">
+    <div><div class="page-title">🧮 Day Summary &amp; Cash-Up</div><div class="page-subtitle" id="cashup-date"></div></div>
+    <div class="page-actions"><button class="btn btn-ghost" onclick="loadCashSummary()">↻ Refresh</button></div>
+  </div>
+  <div class="scroll">
+    <!-- Headline KPIs -->
+    <div class="g4" id="cashup-kpis" style="margin-bottom:14px"></div>
+
+    <div class="g2" style="align-items:start">
+      <!-- LEFT: Payment method breakdown + expenses -->
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="sec-label">💳 Sales by Payment Method</div>
+          <table class="table"><thead><tr><th>Method</th><th>Transactions</th><th class="r" style="text-align:right">Amount</th><th class="r" style="text-align:right">% of Sales</th></tr></thead>
+          <tbody id="cashup-methods"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="sec-label">🧾 Expenses Logged Today</div>
+          <table class="table"><thead><tr><th>Category</th><th>Description</th><th>Type</th><th class="r" style="text-align:right">Amount</th></tr></thead>
+          <tbody id="cashup-expenses"></tbody></table>
+          <div id="cashup-expenses-total" style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;padding:10px 4px 0;border-top:1px solid var(--b1);margin-top:6px"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Cash reconciliation + float/virtual + attendants -->
+      <div>
+        <div class="card" style="margin-bottom:14px;border:1px solid rgba(0,255,136,.25)">
+          <div class="sec-label">💵 Cash Drawer Reconciliation</div>
+          <div id="cashup-recon"></div>
+          <div class="form-row" style="margin-top:12px;margin-bottom:0">
+            <label class="form-label">Physical Cash Counted (KSh)</label>
+            <div style="display:flex;gap:8px;margin-top:5px">
+              <input class="input" id="cashup-counted" type="number" placeholder="Enter amount counted in drawer" oninput="renderCashRecon()">
+              <button class="btn btn-ghost" onclick="document.getElementById('cashup-counted').value='';renderCashRecon()">Clear</button>
+            </div>
+          </div>
+          <div id="cashup-variance" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="sec-label">📲 Float / Virtual (Mobile Money &amp; Digital)</div>
+          <div id="cashup-float"></div>
+        </div>
+
+        <div class="card">
+          <div class="sec-label">🧍 By Attendant — Cash Handled</div>
+          <div id="cashup-attendants"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1084,7 +1140,7 @@ function gotoScreen(name, skipActive=false) {
   const loaders = {
     'dashboard': loadDashboard,
     'summary': loadSales, 'inventory': loadInventory, 'customers': loadCustomers,
-    'budget': loadBudget, 'expenses': loadExpenses,
+    'budget': loadBudget, 'expenses': loadExpenses, 'cashup': loadCashSummary,
     'analytics': loadAnalytics, 'profit': loadProfit, 'categories': loadCategories, 'products': loadProductsAdmin, 'suppliers': loadSuppliers,
     'purchases': loadPurchases, 'transfers': loadTransfers, 'users': loadUsers,
     'settings': loadSettings, 'returns': loadReturnsLog
@@ -2186,6 +2242,149 @@ async function loadAttendantDailySummary() {
       <span>Total — All Attendants</span>
       <span style="color:var(--grn)">KSh ${fmt(Math.round(names.reduce((s,n)=>s+byUser[n].revenue,0)))} · ${allS.length} sale${allS.length!==1?'s':''}</span>
     </div>`
+}
+
+// ============================================================
+// CASH-UP / DAY SUMMARY (cash, float/virtual, mpesa, expenses, reconciliation)
+// ============================================================
+async function loadCashSummary() {
+  const dateEl = document.getElementById('cashup-date')
+  const today = new Date(); today.setHours(0,0,0,0)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
+  if (dateEl) dateEl.textContent = today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ' · ' + (S.branch?.name||'Branch')
+
+  const [{ data: sales }, { data: exps }] = await Promise.all([
+    sb.from('sales').select(`id,total,created_at,payments(method,amount),users(name,initials)`)
+      .eq('branch_id', S.branch.id).eq('status','paid')
+      .gte('created_at', today.toISOString()).lt('created_at', tomorrow.toISOString()),
+    sb.from('expenses').select('amount,category,description,type')
+      .eq('branch_id', S.branch.id).eq('expense_date', today.toISOString().slice(0,10))
+  ])
+  const allS = sales || []
+  const allE = exps || []
+
+  // ---- Aggregate payment methods ----
+  const byMethod = {}
+  let gross = 0
+  allS.forEach(s => {
+    gross += parseFloat(s.total||0)
+    ;(s.payments||[]).forEach(p => {
+      const m = (p.method||'other').toLowerCase()
+      byMethod[m] = byMethod[m] || { amount:0, txns:0 }
+      byMethod[m].amount += parseFloat(p.amount||0)
+      byMethod[m].txns += 1
+    })
+  })
+  const cashAmt = byMethod['cash']?.amount || 0
+  const floatMethods = ['mpesa','card','credit','other'].filter(m => byMethod[m])
+  const floatAmt = floatMethods.reduce((s,m) => s + (byMethod[m]?.amount||0), 0)
+  const mpesaAmt = byMethod['mpesa']?.amount || 0
+  const expensesTotal = allE.reduce((s,e)=>s+parseFloat(e.amount||0),0)
+  const expectedCash = cashAmt - expensesTotal
+
+  // ---- KPI tiles ----
+  document.getElementById('cashup-kpis').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Gross Sales Today</div><div class="stat-val" style="color:var(--grn)">KSh ${fmt(Math.round(gross))}</div><div class="stat-sub">${allS.length} transaction${allS.length!==1?'s':''}</div></div>
+    <div class="stat-card"><div class="stat-label">💵 Cash Sales</div><div class="stat-val" style="color:var(--yel)">KSh ${fmt(Math.round(cashAmt))}</div><div class="stat-sub">${byMethod['cash']?.txns||0} txn${(byMethod['cash']?.txns||0)!==1?'s':''}</div></div>
+    <div class="stat-card"><div class="stat-label">📲 Float / Virtual (Digital)</div><div class="stat-val" style="color:var(--acc)">KSh ${fmt(Math.round(floatAmt))}</div><div class="stat-sub">M-Pesa KSh ${fmt(Math.round(mpesaAmt))}</div></div>
+    <div class="stat-card"><div class="stat-label">🧾 Expenses Today</div><div class="stat-val" style="color:var(--red)">KSh ${fmt(Math.round(expensesTotal))}</div><div class="stat-sub">${allE.length} entr${allE.length!==1?'ies':'y'}</div></div>`
+
+  // ---- Payment method table ----
+  const methodIcons = { cash:'💵', mpesa:'📲', card:'💳', credit:'🧾', other:'🔹' }
+  const methodNames = { cash:'Cash', mpesa:'M-Pesa', card:'Card', credit:'Credit / Pay Later', other:'Other' }
+  const methodKeys = Object.keys(byMethod).sort((a,b)=>byMethod[b].amount-byMethod[a].amount)
+  const methodsTotal = methodKeys.reduce((s,m)=>s+byMethod[m].amount,0) || 1
+  document.getElementById('cashup-methods').innerHTML = methodKeys.length ? methodKeys.map(m => `
+    <tr>
+      <td>${methodIcons[m]||'🔹'} ${esc(methodNames[m]||m)}</td>
+      <td>${byMethod[m].txns}</td>
+      <td style="text-align:right;font-weight:700">KSh ${fmt(Math.round(byMethod[m].amount))}</td>
+      <td style="text-align:right;color:var(--t3)">${Math.round(byMethod[m].amount/methodsTotal*100)}%</td>
+    </tr>`).join('') + `<tr style="font-weight:800"><td colspan="2">Total</td><td style="text-align:right;color:var(--grn)">KSh ${fmt(Math.round(methodsTotal))}</td><td style="text-align:right">100%</td></tr>`
+    : `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3)">No payments recorded yet today</td></tr>`
+
+  // ---- Expenses table ----
+  document.getElementById('cashup-expenses').innerHTML = allE.length ? allE.map(e => `
+    <tr>
+      <td><span class="tag tag-red" style="font-size:9px">${esc(e.category||'—')}</span></td>
+      <td style="color:var(--t2)">${esc(e.description||'—')}</td>
+      <td style="text-transform:capitalize;color:var(--t3)">${esc(e.type||'—')}</td>
+      <td style="text-align:right;font-weight:700;color:var(--red)">− KSh ${fmt(Math.round(parseFloat(e.amount||0)))}</td>
+    </tr>`).join('') : `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3)">No expenses logged today</td></tr>`
+  document.getElementById('cashup-expenses-total').innerHTML = allE.length ? `<span>Total Expenses</span><span style="color:var(--red)">− KSh ${fmt(Math.round(expensesTotal))}</span>` : ''
+
+  // ---- Float / Virtual breakdown ----
+  const flEl = document.getElementById('cashup-float')
+  if (flEl) {
+    flEl.innerHTML = floatMethods.length ? floatMethods.map(m => {
+      const pct = floatAmt ? Math.round(byMethod[m].amount/floatAmt*100) : 0
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span>${methodIcons[m]||'🔹'} ${esc(methodNames[m]||m)} <span style="color:var(--t3);font-size:10px">(${byMethod[m].txns} txn)</span></span>
+          <span style="font-weight:700">KSh ${fmt(Math.round(byMethod[m].amount))}</span>
+        </div>
+        <div style="height:6px;background:var(--b1);border-radius:3px"><div style="height:100%;width:${pct}%;background:var(--acc);border-radius:3px"></div></div>
+      </div>`
+    }).join('') + `<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;padding-top:8px;border-top:1px solid var(--b1);margin-top:4px">
+        <span>Total Float / Virtual</span><span style="color:var(--acc)">KSh ${fmt(Math.round(floatAmt))}</span>
+      </div>`
+      : `<div class="empty-state"><div class="es-icon">📲</div><div class="es-text">No mobile money / digital payments recorded today</div></div>`
+  }
+
+  // ---- By attendant: cash handled ----
+  const byUser = {}
+  allS.forEach(s => {
+    const name = s.users?.name || 'Unknown'
+    byUser[name] = byUser[name] || { initials: s.users?.initials||name[0], cash:0, mpesa:0, other:0, txns:0 }
+    byUser[name].txns += 1
+    ;(s.payments||[]).forEach(p => {
+      const m=(p.method||'other').toLowerCase(), amt=parseFloat(p.amount||0)
+      if (m==='cash') byUser[name].cash += amt
+      else if (m==='mpesa') byUser[name].mpesa += amt
+      else byUser[name].other += amt
+    })
+  })
+  const uNames = Object.keys(byUser).sort((a,b)=>byUser[b].cash-byUser[a].cash)
+  const auEl = document.getElementById('cashup-attendants')
+  if (auEl) auEl.innerHTML = uNames.length ? uNames.map(name => { const u=byUser[name]; return `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+      <div class="cav" style="background:var(--pur)">${esc(u.initials)}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${esc(name)}</div>
+        <div style="font-size:10px;color:var(--t3)">${u.txns} sale${u.txns!==1?'s':''} · 📲 KSh ${fmt(Math.round(u.mpesa))} · 🔹 KSh ${fmt(Math.round(u.other))}</div>
+      </div>
+      <span style="font-weight:700;font-size:13px;color:var(--yel)">💵 KSh ${fmt(Math.round(u.cash))}</span>
+    </div>`}).join('') : `<div class="empty-state"><div class="es-text">No sales yet today</div></div>`
+
+  // store for reconciliation re-render on input
+  S.cashup = { cashAmt, expensesTotal, expectedCash }
+  renderCashRecon()
+}
+
+function renderCashRecon() {
+  const d = S.cashup
+  const recEl = document.getElementById('cashup-recon')
+  const varEl = document.getElementById('cashup-variance')
+  if (!d || !recEl) return
+  recEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0"><span>💵 Cash Sales (collected today)</span><span style="font-weight:700;color:var(--grn)">+ KSh ${fmt(Math.round(d.cashAmt))}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0"><span>🧾 Less: Cash Expenses Paid Out</span><span style="font-weight:700;color:var(--red)">− KSh ${fmt(Math.round(d.expensesTotal))}</span></div>
+    <div class="div" style="margin:6px 0"></div>
+    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800"><span>= Expected Cash in Drawer</span><span style="color:var(--grn)">KSh ${fmt(Math.round(d.expectedCash))}</span></div>`
+
+  const countedRaw = document.getElementById('cashup-counted')?.value
+  if (countedRaw === '' || countedRaw === undefined || countedRaw === null) { varEl.innerHTML = `<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px 0">Enter the physical cash counted above to check for variance</div>`; return }
+  const counted = parseFloat(countedRaw) || 0
+  const variance = counted - d.expectedCash
+  const ok = Math.abs(variance) < 1
+  const over = variance > 0
+  varEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:${ok?'rgba(0,255,136,.08)':over?'rgba(0,212,255,.08)':'rgba(255,51,102,.08)'};border:1px solid ${ok?'rgba(0,255,136,.3)':over?'rgba(0,212,255,.3)':'rgba(255,51,102,.3)'}">
+    <div>
+      <div style="font-size:11px;color:var(--t3)">Counted: KSh ${fmt(Math.round(counted))} vs Expected: KSh ${fmt(Math.round(d.expectedCash))}</div>
+      <div style="font-size:14px;font-weight:800;color:${ok?'var(--grn)':over?'var(--acc)':'var(--red)'};margin-top:2px">${ok?'✅ Balanced — drawer matches':over?'⬆️ Over by KSh '+fmt(Math.round(Math.abs(variance))):'⬇️ Short by KSh '+fmt(Math.round(Math.abs(variance)))}</div>
+    </div>
+    <span style="font-size:24px">${ok?'✅':over?'⬆️':'⚠️'}</span>
+  </div>`
 }
 
 function renderLineChart(id, labels, data, label, color) {
