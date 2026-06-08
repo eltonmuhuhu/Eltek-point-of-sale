@@ -2447,6 +2447,7 @@ function renderProductsAdmin(prods) {
       <td style="display:flex;gap:4px">
         <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px" onclick="editProduct('${p.id}')">✏️</button>
         <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px;color:var(--red)" onclick="toggleProduct('${p.id}',${!p.is_active})">${p.is_active?'Deactivate':'Activate'}</button>
+        <button class="btn btn-ghost" style="height:26px;padding:0 8px;font-size:10px;color:var(--red)" onclick="deleteProduct('${p.id}','${esc(p.name).replace(/'/g,"\\'")}')">🗑️</button>
       </td>
     </tr>`}).join('')
 }
@@ -2514,6 +2515,19 @@ async function saveProduct() {
 async function toggleProduct(id, active) {
   await sb.from('products').update({ is_active: active }).eq('id', id)
   notify(active ? '✅ Activated' : '⏹ Deactivated', '')
+  loadProductsAdmin()
+}
+
+async function deleteProduct(id, name) {
+  if (!confirm(`Permanently delete "${name}"?\n\nThis cannot be undone. If this product has sales or inventory history, deletion will be blocked — deactivate it instead.`)) return
+  const { error } = await sb.from('products').delete().eq('id', id)
+  if (error) {
+    notify('❌ Cannot Delete', error.message.includes('foreign key') || error.code==='23503'
+      ? `"${name}" has linked sales/inventory records. Deactivate it instead of deleting.`
+      : error.message, false)
+    return
+  }
+  notify('🗑️ Product Deleted', name)
   loadProductsAdmin()
 }
 
@@ -3197,9 +3211,10 @@ async function loadCategories() {
             <div style="font-size:11px;color:var(--t3);margin-top:2px">${active} active${subsList.length?` · ${subsList.length} subcategor${subsList.length===1?'y':'ies'}`:''}</div>
           </div>
         </div>
-        <div style="display:flex;gap:18px;text-align:right">
+        <div style="display:flex;gap:18px;align-items:center;text-align:right">
           <div><div class="stat-label">Stock Value</div><div style="font-weight:700;font-size:13px">KSh ${fmt(Math.round(value))}</div></div>
           <div><div class="stat-label">Avg Margin</div><span class="tag ${avgMargin>=30?'tag-grn':avgMargin>=15?'tag-yel':'tag-red'}">${avgMargin}%</span></div>
+          <button class="btn btn-ghost" style="height:28px;padding:0 10px;font-size:10px;color:var(--red)" onclick="deleteCategory('${esc(cat).replace(/'/g,"\\'")}',${n})">🗑️ Delete</button>
         </div>
       </div>
       ${subsList.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${subsList.map(s=>`<span class="tag tag-acc" style="font-size:10px">${esc(s)}</span>`).join('')}</div>` : ''}
@@ -3215,6 +3230,18 @@ async function loadCategories() {
   // refresh datalist used in product form
   const catList = document.getElementById('cat-list')
   if (catList) catList.innerHTML = catNames.map(c=>`<option value="${esc(c)}">`).join('')
+}
+
+async function deleteCategory(name, productCount) {
+  if (productCount > 0) {
+    notify('⚠️ Category In Use', `"${name}" has ${productCount} product${productCount===1?'':'s'} assigned. Reassign or delete those products first.`, false)
+    return
+  }
+  if (!confirm(`Delete category "${name}"?\n\nThis only removes the empty category entry — it has no products attached.`)) return
+  const { error } = await sb.from('categories').delete().eq('name', name)
+  if (error) { notify('❌ Error', error.message, false); return }
+  notify('🗑️ Category Deleted', name)
+  loadCategories()
 }
 
 function openAddCategory() {
