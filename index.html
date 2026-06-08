@@ -336,7 +336,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center" id="inv-kpis-mini"></div>
   </div>
   <div class="scroll">
-    <table class="table"><thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Nairobi</th><th>Nyeri</th><th>Warehouse</th><th>Reorder</th><th>Cost</th><th>Retail</th><th>Margin</th><th>Status</th></tr></thead>
+    <table class="table"><thead><tr><th>#</th><th>Product</th><th>SKU</th><th>Category</th><th>Nairobi</th><th>Nyeri</th><th>Warehouse</th><th>Reorder</th><th>Cost</th><th>Retail</th><th>Margin</th><th>Status</th></tr></thead>
     <tbody id="inv-tbody"></tbody></table>
   </div>
 </div>
@@ -545,7 +545,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     </div>
   </div>
   <div class="scroll">
-    <table class="table"><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Cost</th><th>Retail</th><th>Margin</th><th>Warranty</th><th>Active</th><th></th></tr></thead>
+    <table class="table"><thead><tr><th>#</th><th>Name</th><th>SKU</th><th>Category</th><th>Cost</th><th>Retail</th><th>Margin</th><th>Warranty</th><th>Active</th><th></th></tr></thead>
     <tbody id="products-tbody"></tbody></table>
   </div>
 </div>
@@ -556,7 +556,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
     <div><div class="page-title">🚚 Suppliers</div><div class="page-subtitle">Vendor management</div></div>
     <div class="page-actions"><button class="btn btn-acc" onclick="openModal('add-supplier-modal')">+ Add Supplier</button></div>
   </div>
-  <div class="scroll"><table class="table"><thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Deals In</th><th>Payment Terms</th><th></th></tr></thead>
+  <div class="scroll"><table class="table"><thead><tr><th>#</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Deals In</th><th>Payment Terms</th><th></th></tr></thead>
   <tbody id="suppliers-tbody"></tbody></table></div>
 </div>
 
@@ -1577,8 +1577,8 @@ function renderInventoryTable(data, filterBranch='') {
   const bNyeri = S.branches.find(b=>b.name.includes('Nyeri'))?.id
   const bWH = S.branches.find(b=>b.name.includes('Warehouse'))?.id
   const tbody = document.getElementById('inv-tbody')
-  if (!data.length) { tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--t3)">No products found</td></tr>`; return }
-  tbody.innerHTML = data.map(p => {
+  if (!data.length) { tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--t3)">No products found</td></tr>`; return }
+  tbody.innerHTML = data.map((p, idx) => {
     const qN = p.inv[bNairobi] || 0
     const qY = p.inv[bNyeri] || 0
     const qW = p.inv[bWH] || 0
@@ -1586,6 +1586,7 @@ function renderInventoryTable(data, filterBranch='') {
     const margin = p.cost_price > 0 ? Math.round((p.retail_price - p.cost_price) / p.retail_price * 100) : 0
     const low = totalQ <= p.reorder_point && p.reorder_point > 0
     return `<tr>
+      <td style="color:var(--t3)">${idx+1}.</td>
       <td style="font-weight:600">${esc(p.name)}</td>
       <td style="font-family:monospace;font-size:11px;color:var(--t3)">${esc(p.sku)}</td>
       <td><span class="tag tag-acc" style="font-size:9px">${esc(p.category)}</span></td>
@@ -2057,10 +2058,11 @@ function filterProductsAdmin() {
 
 function renderProductsAdmin(prods) {
   const tbody = document.getElementById('products-tbody')
-  if (!prods.length) { tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t3)">No products. Click + Add Product to start.</td></tr>`; return }
-  tbody.innerHTML = prods.map(p => {
+  if (!prods.length) { tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--t3)">No products. Click + Add Product to start.</td></tr>`; return }
+  tbody.innerHTML = prods.map((p, idx) => {
     const margin = p.cost_price>0 ? Math.round((p.retail_price-p.cost_price)/p.retail_price*100) : 0
     return `<tr>
+      <td style="color:var(--t3)">${idx+1}.</td>
       <td style="font-weight:600">${esc(p.name)}</td>
       <td style="font-family:monospace;font-size:11px;color:var(--t3)">${esc(p.sku)}</td>
       <td><span class="tag tag-acc" style="font-size:9px">${esc(p.category)}</span></td>
@@ -2153,8 +2155,9 @@ async function loadSuppliers() {
   const poSup = document.getElementById('po-supplier')
   if (poSup) poSup.innerHTML = (data||[]).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')
   const tbody = document.getElementById('suppliers-tbody')
-  if (!data?.length) { tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--t3)">No suppliers yet</td></tr>`; return }
-  tbody.innerHTML = data.map(s=>`<tr>
+  if (!data?.length) { tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--t3)">No suppliers yet</td></tr>`; return }
+  tbody.innerHTML = data.map((s, idx)=>`<tr>
+    <td style="color:var(--t3)">${idx+1}.</td>
     <td style="font-weight:600">${esc(s.name)}</td>
     <td>${esc(s.contact_person||'—')}</td>
     <td>${esc(s.phone||'—')}</td>
@@ -2631,7 +2634,7 @@ function renderProfitTable(tree) {
     const catId = `pc-${ci}`
     rows += `<tr style="cursor:pointer;background:var(--s1)" onclick="toggleProfitRow('${catId}')">
       <td><span id="${catId}-arrow">▸</span></td>
-      <td style="font-weight:800">📁 ${esc(cat)}</td>
+      <td style="font-weight:800">${ci+1}. 📁 ${esc(cat)}</td>
       <td style="text-align:right">${c.units}</td>
       <td style="text-align:right">KSh ${fmt(Math.round(c.revenue))}</td>
       <td style="text-align:right">KSh ${fmt(Math.round(c.cogs))}</td>
