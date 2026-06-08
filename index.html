@@ -49,9 +49,10 @@ body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;ba
 .btn-login{width:100%;padding:14px;border-radius:10px;background:var(--acc);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
 .btn-login:hover{background:var(--acc2)}
 .btn-login:disabled{opacity:.5;cursor:not-allowed}
-#charge-btn,#charge-btn:disabled,#charge-btn:hover{color:#06281a!important;-webkit-text-fill-color:#06281a!important;background:var(--grn)!important}
-#charge-btn:disabled{opacity:.55;cursor:not-allowed}
-#charge-btn:not(:disabled):hover{filter:brightness(1.15);box-shadow:0 0 26px rgba(0,255,136,.6)}
+#charge-btn,#charge-btn:disabled,#charge-btn:hover{color:#06281a!important;-webkit-text-fill-color:#06281a!important;background:var(--grn)!important;box-shadow:0 0 18px rgba(0,255,136,.45);transition:filter .2s,box-shadow .2s,transform .15s}
+#charge-btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+#charge-btn:not(:disabled):hover{filter:brightness(1.35) saturate(1.3);box-shadow:0 0 38px rgba(0,255,136,.85),0 0 70px rgba(0,255,136,.35)}
+#charge-btn:not(:disabled):active{transform:scale(.98)}
 /* APP SHELL */
 #app-shell{display:none;height:100vh;grid-template-rows:44px 1fr;grid-template-columns:176px 1fr}
 #app-shell.visible{display:grid}
